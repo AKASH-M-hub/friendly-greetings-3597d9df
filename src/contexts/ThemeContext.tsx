@@ -1,23 +1,33 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type Theme = 'light' | 'dark' | 'sunset' | 'aqua' | 'cosmic';
+export type Theme = 'light' | 'dark' | 'sunset' | 'sunset-light' | 'aqua' | 'aqua-light' | 'cosmic' | 'cosmic-light';
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
-  themes: { id: Theme; name: string; color: string }[];
+  themes: { id: Theme; name: string; color: string; group: string }[];
+  isDark: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const themes: { id: Theme; name: string; color: string }[] = [
-  { id: 'sunset', name: 'Sunset Orange', color: 'hsl(24, 100%, 55%)' },
-  { id: 'dark', name: 'Dark Mode', color: 'hsl(0, 0%, 85%)' },
-  { id: 'light', name: 'Light Mode', color: 'hsl(220, 14%, 40%)' },
-  { id: 'aqua', name: 'Aqua Blue', color: 'hsl(185, 100%, 50%)' },
-  { id: 'cosmic', name: 'Cosmic Green', color: 'hsl(155, 100%, 50%)' },
+const themes: { id: Theme; name: string; color: string; group: string }[] = [
+  // Orange themes
+  { id: 'sunset', name: 'Sunset Dark', color: 'hsl(24, 100%, 55%)', group: 'orange' },
+  { id: 'sunset-light', name: 'Sunset Light', color: 'hsl(24, 100%, 50%)', group: 'orange' },
+  // Blue themes
+  { id: 'aqua', name: 'Aqua Dark', color: 'hsl(185, 100%, 50%)', group: 'blue' },
+  { id: 'aqua-light', name: 'Aqua Light', color: 'hsl(185, 100%, 42%)', group: 'blue' },
+  // Green themes
+  { id: 'cosmic', name: 'Cosmic Dark', color: 'hsl(155, 100%, 50%)', group: 'green' },
+  { id: 'cosmic-light', name: 'Cosmic Light', color: 'hsl(155, 100%, 38%)', group: 'green' },
+  // Grey/Neutral themes
+  { id: 'dark', name: 'Dark Mode', color: 'hsl(0, 0%, 85%)', group: 'grey' },
+  { id: 'light', name: 'Light Mode', color: 'hsl(220, 14%, 40%)', group: 'grey' },
 ];
+
+const darkThemes: Theme[] = ['dark', 'sunset', 'aqua', 'cosmic'];
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
@@ -29,9 +39,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return 'sunset';
   });
 
+  const isDark = darkThemes.includes(theme);
+
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark', 'sunset', 'aqua', 'cosmic');
+    // Remove all theme classes
+    themes.forEach(t => root.classList.remove(t.id));
     root.classList.add(theme);
     localStorage.setItem('chrono-theme', theme);
   }, [theme]);
@@ -49,7 +62,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, themes }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, themes, isDark }}>
       {children}
     </ThemeContext.Provider>
   );
