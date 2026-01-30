@@ -1,91 +1,168 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Search, 
-  Filter, 
   BookOpen, 
-  Clock, 
-  Users,
-  Star,
-  Play,
-  Sparkles
+  Sparkles,
+  GraduationCap
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useMode } from '@/contexts/ModeContext';
+import { LiveTeachingFeed, LiveSession } from '@/components/learning/LiveTeachingFeed';
+import { CategoryDiscovery, FilterState } from '@/components/learning/CategoryDiscovery';
+import { LearningSessionTracker, LearningProgress } from '@/components/learning/LearningSessionTracker';
+import { LearnerFeedbackForm, FeedbackData } from '@/components/learning/LearnerFeedbackForm';
+import { toast } from 'sonner';
 
-const categories = [
-  'All', 'Technology', 'Design', 'Business', 'Languages', 'Music', 'Fitness'
-];
-
-const liveSessions = [
+// Mock data - would come from database
+const mockSessions: LiveSession[] = [
   {
-    id: 1,
+    id: '1',
     title: 'Advanced React Patterns',
-    teacher: 'Michael Chen',
+    teacher: { id: 't1', name: 'Michael Chen', rating: 4.9, totalSessions: 45 },
     category: 'Technology',
+    skillArea: 'Frontend Development',
     learners: 8,
     maxLearners: 12,
     duration: '1.5h',
-    rating: 4.9,
     isLive: true,
   },
   {
-    id: 2,
+    id: '2',
     title: 'Figma for Beginners',
-    teacher: 'Sarah Williams',
+    teacher: { id: 't2', name: 'Sarah Williams', rating: 4.7, totalSessions: 32 },
     category: 'Design',
+    skillArea: 'UI/UX',
     learners: 5,
     maxLearners: 10,
     duration: '1h',
-    rating: 4.7,
     isLive: true,
   },
   {
-    id: 3,
+    id: '3',
     title: 'Spanish Conversation',
-    teacher: 'Carlos Rivera',
+    teacher: { id: 't3', name: 'Carlos Rivera', rating: 5.0, totalSessions: 78 },
     category: 'Languages',
+    skillArea: 'Speaking',
     learners: 3,
     maxLearners: 6,
     duration: '45m',
-    rating: 5.0,
     isLive: true,
   },
   {
-    id: 4,
+    id: '4',
     title: 'Piano Basics',
-    teacher: 'Emma Thompson',
+    teacher: { id: 't4', name: 'Emma Thompson', rating: 4.8, totalSessions: 23 },
     category: 'Music',
+    skillArea: 'Instruments',
     learners: 4,
     maxLearners: 8,
     duration: '1h',
-    rating: 4.8,
     isLive: false,
     startsIn: '30 min',
   },
+  {
+    id: '5',
+    title: 'JavaScript Essentials',
+    teacher: { id: 't5', name: 'David Kim', rating: 4.6, totalSessions: 56 },
+    category: 'Technology',
+    skillArea: 'Programming',
+    learners: 10,
+    maxLearners: 15,
+    duration: '2h',
+    isLive: true,
+  },
+  {
+    id: '6',
+    title: 'Yoga for Beginners',
+    teacher: { id: 't6', name: 'Maya Patel', rating: 4.9, totalSessions: 89 },
+    category: 'Fitness',
+    skillArea: 'Wellness',
+    learners: 6,
+    maxLearners: 20,
+    duration: '1h',
+    isLive: false,
+    startsIn: '1 hour',
+  },
 ];
 
-const myProgress = [
-  { skill: 'React Development', hours: 12, level: 'Intermediate' },
-  { skill: 'UI Design', hours: 8, level: 'Beginner' },
-  { skill: 'Spanish', hours: 5, level: 'Beginner' },
+const domains = ['Technology', 'Design', 'Business', 'Languages', 'Music', 'Fitness'];
+const skillAreas = ['Frontend Development', 'UI/UX', 'Programming', 'Speaking', 'Instruments', 'Wellness', 'Marketing'];
+
+const mockProgress: LearningProgress[] = [
+  { skill: 'React Development', hoursSpent: 12, sessionsAttended: 8, level: 'Intermediate', lastSession: 'Yesterday' },
+  { skill: 'UI Design', hoursSpent: 8, sessionsAttended: 5, level: 'Beginner', lastSession: '3 days ago' },
+  { skill: 'Spanish', hoursSpent: 5, sessionsAttended: 4, level: 'Beginner', lastSession: 'Today' },
 ];
 
 export default function LearningDashboard() {
   const { unlockMode } = useMode();
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredSessions = liveSessions.filter(session => {
-    const matchesCategory = selectedCategory === 'All' || session.category === selectedCategory;
-    const matchesSearch = session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         session.teacher.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const [filters, setFilters] = useState<FilterState>({
+    domains: [],
+    skillAreas: [],
+    availability: 'all',
+    searchQuery: ''
   });
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackSession, setFeedbackSession] = useState<{ id: string; title: string; teacher: string } | null>(null);
+
+  // Filter sessions based on current filters
+  const filteredSessions = mockSessions.filter(session => {
+    // Search query
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      const matchesSearch = 
+        session.title.toLowerCase().includes(query) ||
+        session.teacher.name.toLowerCase().includes(query) ||
+        session.category.toLowerCase().includes(query) ||
+        session.skillArea.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+    }
+
+    // Domain filter
+    if (filters.domains.length > 0 && !filters.domains.includes(session.category)) {
+      return false;
+    }
+
+    // Skill area filter
+    if (filters.skillAreas.length > 0 && !filters.skillAreas.includes(session.skillArea)) {
+      return false;
+    }
+
+    // Availability filter
+    if (filters.availability === 'live' && !session.isLive) return false;
+    if (filters.availability === 'upcoming' && session.isLive) return false;
+
+    return true;
+  });
+
+  const handleRequestSession = (sessionId: string) => {
+    const session = mockSessions.find(s => s.id === sessionId);
+    if (session) {
+      toast.success(`Request sent to ${session.teacher.name}!`, {
+        description: `You requested to join "${session.title}"`
+      });
+    }
+  };
+
+  const handleFeedbackSubmit = (feedback: FeedbackData) => {
+    console.log('Feedback submitted:', feedback);
+    toast.success('Feedback submitted!', {
+      description: 'Thank you for your feedback'
+    });
+  };
+
+  // Demo: show feedback for completed session
+  const handleShowFeedbackDemo = () => {
+    setFeedbackSession({
+      id: '1',
+      title: 'Advanced React Patterns',
+      teacher: 'Michael Chen'
+    });
+    setShowFeedback(true);
+  };
 
   return (
     <MainLayout>
@@ -97,187 +174,91 @@ export default function LearningDashboard() {
               Learning Dashboard
             </h1>
             <p className="text-muted-foreground">
-              Discover sessions and expand your skills
+              Discover teachers and expand your skills
             </p>
           </div>
-          <Button variant="chrono-outline" onClick={() => unlockMode()}>
-            Switch Mode
-          </Button>
-        </div>
-
-        {/* Search & Filter */}
-        <div className="mb-6 flex flex-col gap-4 md:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search sessions or teachers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-        </div>
-
-        {/* Categories */}
-        <div className="mb-8 flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? 'chrono' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedCategory(category)}
-              className="rounded-full"
-            >
-              {category}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleShowFeedbackDemo}>
+              Demo Feedback
             </Button>
-          ))}
+            <Button variant="chrono-outline" onClick={() => unlockMode()}>
+              Switch Mode
+            </Button>
+          </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Available Sessions */}
-          <div className="lg:col-span-2">
+        {/* Category Discovery Filters */}
+        <div className="mb-6">
+          <CategoryDiscovery
+            filters={filters}
+            onFilterChange={setFilters}
+            domains={domains}
+            skillAreas={skillAreas}
+          />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-4">
+          {/* Main Content - Live Teaching Feed */}
+          <div className="lg:col-span-3">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-foreground">
+              <h2 className="font-display text-xl font-semibold text-foreground flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-primary" />
                 Available Sessions
               </h2>
               <Badge variant="outline" className="gap-1">
                 <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                {liveSessions.filter(s => s.isLive).length} Live Now
+                {mockSessions.filter(s => s.isLive).length} Live Now
               </Badge>
             </div>
             
-            <div className="grid gap-4 sm:grid-cols-2">
-              {filteredSessions.map((session, index) => (
-                <motion.div
-                  key={session.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card className="group cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-lg">
-                    <CardContent className="p-5">
-                      <div className="mb-3 flex items-start justify-between">
-                        <Badge 
-                          variant="outline" 
-                          className={session.isLive 
-                            ? "border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400" 
-                            : "border-primary/50 bg-primary/10 text-primary"
-                          }
-                        >
-                          {session.isLive ? (
-                            <>
-                              <span className="mr-1 h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                              Live
-                            </>
-                          ) : (
-                            `Starts in ${session.startsIn}`
-                          )}
-                        </Badge>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                          <span className="font-medium">{session.rating}</span>
-                        </div>
-                      </div>
-                      
-                      <h3 className="mb-1 font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {session.title}
-                      </h3>
-                      <p className="mb-3 text-sm text-muted-foreground">
-                        by {session.teacher}
-                      </p>
-                      
-                      <div className="mb-4 flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          {session.learners}/{session.maxLearners}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {session.duration}
-                        </span>
-                      </div>
-                      
-                      <Button 
-                        variant="chrono-outline" 
-                        className="w-full gap-2"
-                        disabled={session.learners >= session.maxLearners}
-                      >
-                        <Play className="h-4 w-4" />
-                        {session.learners >= session.maxLearners ? 'Session Full' : 'Join Session'}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-
-            {filteredSessions.length === 0 && (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12">
-                <BookOpen className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                <p className="text-muted-foreground">No sessions found matching your criteria</p>
-              </div>
-            )}
+            <LiveTeachingFeed 
+              sessions={filteredSessions}
+              onRequestSession={handleRequestSession}
+            />
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Credits Reminder */}
-            <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
-              <CardContent className="p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <span className="font-display font-semibold text-foreground">Your Credits</span>
-                </div>
-                <p className="mb-1 font-display text-3xl font-bold text-foreground">24</p>
-                <p className="text-sm text-muted-foreground">
-                  Learning costs 1 credit/hour
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Learning Progress */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  My Learning Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {myProgress.map((item) => (
-                  <div key={item.skill} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-foreground">{item.skill}</span>
-                      <span className="text-muted-foreground">{item.hours}h</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min((item.hours / 20) * 100, 100)}%` }}
-                        transition={{ delay: 0.5, duration: 0.8 }}
-                        className="h-full rounded-full bg-primary"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">{item.level}</p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
+                <CardContent className="p-5">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <span className="font-display font-semibold text-foreground">Your Credits</span>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                  <p className="mb-1 font-display text-3xl font-bold text-foreground">24</p>
+                  <p className="text-sm text-muted-foreground">
+                    Learning costs 1 credit/hour
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Learning Progress Tracker */}
+            <LearningSessionTracker
+              totalHoursLearned={25}
+              sessionsAttended={17}
+              currentStreak={5}
+              progress={mockProgress}
+            />
 
             {/* Quick Tips */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Quick Tips</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  Quick Tips
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    Join sessions early to get the best experience
+                    Join sessions early for the best experience
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
@@ -292,6 +273,18 @@ export default function LearningDashboard() {
             </Card>
           </div>
         </div>
+
+        {/* Feedback Modal */}
+        {feedbackSession && (
+          <LearnerFeedbackForm
+            isOpen={showFeedback}
+            onClose={() => setShowFeedback(false)}
+            sessionId={feedbackSession.id}
+            teacherName={feedbackSession.teacher}
+            sessionTitle={feedbackSession.title}
+            onSubmit={handleFeedbackSubmit}
+          />
+        )}
       </div>
     </MainLayout>
   );
