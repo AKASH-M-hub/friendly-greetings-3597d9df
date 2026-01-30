@@ -7,11 +7,14 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ModeProvider } from "@/contexts/ModeContext";
 import { CustomCursor } from "@/components/effects/CustomCursor";
 import { AmbientBackground } from "@/components/effects/AmbientBackground";
+import Landing from "./pages/Landing";
 import ModeSelection from "./pages/ModeSelection";
 import TeachingDashboard from "./pages/TeachingDashboard";
 import LearningDashboard from "./pages/LearningDashboard";
 import Credits from "./pages/Credits";
 import Sessions from "./pages/Sessions";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,11 +30,14 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<ModeSelection />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="/mode" element={<ModeSelection />} />
               <Route path="/teaching" element={<TeachingDashboard />} />
               <Route path="/learning" element={<LearningDashboard />} />
               <Route path="/credits" element={<Credits />} />
               <Route path="/sessions" element={<Sessions />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

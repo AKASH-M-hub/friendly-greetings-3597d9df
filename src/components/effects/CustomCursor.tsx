@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion, useSpring, useMotionValue } from 'framer-motion';
 
 interface CursorState {
@@ -14,21 +14,37 @@ export function CustomCursor() {
     hoverType: 'default',
   });
   const [isVisible, setIsVisible] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   const cursorX = useMotionValue(-100);
   const cursorY = useMotionValue(-100);
 
-  const springConfig = { damping: 50, stiffness: 400 };
+  const springConfig = { damping: 35, stiffness: 300, mass: 0.5 };
   const cursorXSpring = useSpring(cursorX, springConfig);
   const cursorYSpring = useSpring(cursorY, springConfig);
 
-  // Create springs for the trail
-  const trailSprings = Array.from({ length: 8 }).map((_, i) => ({
-    x: useSpring(cursorX, { damping: 20 + i * 2, stiffness: 200 - i * 10 }),
-    y: useSpring(cursorY, { damping: 20 + i * 2, stiffness: 200 - i * 10 }),
+  // Softer trail springs
+  const trailConfigs = useMemo(() => 
+    Array.from({ length: 5 }).map((_, i) => ({
+      damping: 25 + i * 5,
+      stiffness: 180 - i * 20,
+      mass: 0.3 + i * 0.1,
+    })), []
+  );
+
+  const trailSprings = trailConfigs.map((config) => ({
+    x: useSpring(cursorX, config),
+    y: useSpring(cursorY, config),
   }));
 
   useEffect(() => {
+    // Detect touch device
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  useEffect(() => {
+    if (isTouchDevice) return;
+
     const moveCursor = (e: MouseEvent) => {
       cursorX.set(e.clientX);
       cursorY.set(e.clientY);
@@ -48,7 +64,7 @@ export function CustomCursor() {
 
       if (target.closest('a, [role="link"]')) {
         setCursorState(prev => ({ ...prev, isHovering: true, hoverType: 'link' }));
-      } else if (target.closest('button, [role="button"], .cursor-pointer')) {
+      } else if (target.closest('button, [role="button"], .cursor-pointer, [data-clickable]')) {
         setCursorState(prev => ({ ...prev, isHovering: true, hoverType: 'button' }));
       } else if (target.closest('input, textarea, [contenteditable]')) {
         setCursorState(prev => ({ ...prev, isHovering: true, hoverType: 'text' }));
@@ -64,7 +80,7 @@ export function CustomCursor() {
     window.addEventListener('mousemove', moveCursor, { passive: true });
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('mouseover', handleMouseEnter); // Keeping mouseover for delegation
+    window.addEventListener('mouseover', handleMouseEnter);
     document.documentElement.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
@@ -74,48 +90,54 @@ export function CustomCursor() {
       window.removeEventListener('mouseover', handleMouseEnter);
       document.documentElement.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [cursorX, cursorY, isVisible]);
+  }, [cursorX, cursorY, isVisible, isTouchDevice]);
+
+  // Hide on touch devices
+  if (isTouchDevice) return null;
 
   const getCursorSize = () => {
-    if (cursorState.isClicking) return 6; // Shrink slightly on click
-    if (cursorState.hoverType === 'button' || cursorState.hoverType === 'link') return 10;
+    if (cursorState.isClicking) return 6;
+    if (cursorState.hoverType === 'button' || cursorState.hoverType === 'link') return 12;
     return 8;
   };
 
   const getRingSize = () => {
-    if (cursorState.isClicking) return 24;
-    if (cursorState.hoverType === 'button' || cursorState.hoverType === 'link') return 32;
-    return 20;
+    if (cursorState.isClicking) return 28;
+    if (cursorState.hoverType === 'button' || cursorState.hoverType === 'link') return 40;
+    return 24;
   };
 
   return (
     <>
       <style>{`
-        * {
-          cursor: none !important;
+        @media (pointer: fine) {
+          * {
+            cursor: none !important;
+          }
         }
       `}</style>
 
-      {/* Trail effect */}
+      {/* Soft gradient trail */}
       {trailSprings.map((spring, index) => (
         <motion.div
           key={index}
-          className="pointer-events-none fixed left-0 top-0 z-[9998] rounded-full bg-primary/30"
+          className="pointer-events-none fixed left-0 top-0 z-[9997] rounded-full"
           style={{
             x: spring.x,
             y: spring.y,
             translateX: '-50%',
             translateY: '-50%',
-            width: 8 - index * 0.5,
-            height: 8 - index * 0.5,
-            opacity: isVisible ? 0.6 - index * 0.05 : 0,
+            width: 6 - index * 0.8,
+            height: 6 - index * 0.8,
+            background: `radial-gradient(circle, hsl(var(--primary) / ${0.4 - index * 0.06}) 0%, transparent 70%)`,
+            opacity: isVisible ? 0.8 - index * 0.12 : 0,
           }}
         />
       ))}
 
-      {/* Main cursor dot */}
+      {/* Main cursor dot with soft glow */}
       <motion.div
-        className="pointer-events-none fixed left-0 top-0 z-[9999] rounded-full mix-blend-difference"
+        className="pointer-events-none fixed left-0 top-0 z-[9999] rounded-full"
         style={{
           x: cursorXSpring,
           y: cursorYSpring,
@@ -126,67 +148,74 @@ export function CustomCursor() {
           width: getCursorSize(),
           height: getCursorSize(),
           opacity: isVisible ? 1 : 0,
+          boxShadow: cursorState.isHovering 
+            ? '0 0 20px hsl(var(--primary) / 0.5), 0 0 40px hsl(var(--primary) / 0.3)'
+            : '0 0 10px hsl(var(--primary) / 0.3)',
           backgroundColor: cursorState.hoverType === 'text'
             ? 'hsl(var(--primary))'
             : 'hsl(var(--foreground))',
         }}
-        transition={{ duration: 0.15 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
       />
 
-      {/* Outer ring */}
+      {/* Outer ring with gradient */}
       <motion.div
-        className="pointer-events-none fixed left-0 top-0 z-[9998] rounded-full border-2 border-primary/50"
+        className="pointer-events-none fixed left-0 top-0 z-[9998] rounded-full"
         style={{
           x: cursorXSpring,
           y: cursorYSpring,
           translateX: '-50%',
           translateY: '-50%',
+          background: 'transparent',
+          border: '1.5px solid',
         }}
         animate={{
           width: getRingSize(),
           height: getRingSize(),
-          opacity: isVisible ? (cursorState.isHovering ? 1 : 0.5) : 0,
+          opacity: isVisible ? (cursorState.isHovering ? 0.9 : 0.5) : 0,
           borderColor: cursorState.isClicking
             ? 'hsl(var(--primary))'
-            : 'hsl(var(--primary) / 0.5)',
+            : 'hsl(var(--primary) / 0.6)',
+          scale: cursorState.isClicking ? 0.9 : 1,
         }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
       />
 
-      {/* Glow effect on hover */}
+      {/* Soft ambient glow on hover */}
       {cursorState.isHovering && (
         <motion.div
-          className="pointer-events-none fixed left-0 top-0 z-[9997] rounded-full"
+          className="pointer-events-none fixed left-0 top-0 z-[9996] rounded-full"
           style={{
             x: cursorXSpring,
             y: cursorYSpring,
             translateX: '-50%',
             translateY: '-50%',
-            background: 'radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, hsl(var(--primary) / 0.05) 40%, transparent 70%)',
           }}
           initial={{ width: 0, height: 0, opacity: 0 }}
           animate={{
-            width: 40,
-            height: 40,
-            opacity: 0.8
+            width: 60,
+            height: 60,
+            opacity: 0.9
           }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
         />
       )}
 
-      {/* Click ripple effect */}
+      {/* Gentle click ripple */}
       {cursorState.isClicking && (
         <motion.div
-          className="pointer-events-none fixed left-0 top-0 z-[9996] rounded-full border border-primary"
+          className="pointer-events-none fixed left-0 top-0 z-[9995] rounded-full"
           style={{
             x: cursorX,
             y: cursorY,
             translateX: '-50%',
             translateY: '-50%',
+            background: 'radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%)',
           }}
-          initial={{ width: 10, height: 10, opacity: 1 }}
-          animate={{ width: 60, height: 60, opacity: 0 }}
-          transition={{ duration: 0.4 }}
+          initial={{ width: 20, height: 20, opacity: 0.8 }}
+          animate={{ width: 80, height: 80, opacity: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
         />
       )}
     </>
