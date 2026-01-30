@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, BookOpen, ArrowRight, Sparkles } from 'lucide-react';
+import { GraduationCap, BookOpen, ArrowRight, Sparkles, ArrowLeft } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ModeCard } from '@/components/mode/ModeCard';
 import { ReadinessCheck } from '@/components/mode/ReadinessCheck';
 import { Button } from '@/components/ui/button';
 import { useMode } from '@/contexts/ModeContext';
+import { Link } from 'react-router-dom';
 
 export default function ModeSelection() {
   const navigate = useNavigate();
@@ -35,8 +36,23 @@ export default function ModeSelection() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout hideNavbar>
       <div className="noise-overlay flex min-h-screen flex-col items-center justify-center px-6 py-12">
+        {/* Back Link */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute left-6 top-6"
+        >
+          <Link 
+            to="/" 
+            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Link>
+        </motion.div>
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
