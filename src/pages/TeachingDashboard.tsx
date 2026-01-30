@@ -1,40 +1,160 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Plus, 
-  Users, 
-  Clock, 
-  Star, 
-  TrendingUp,
-  PlayCircle,
-  Calendar,
-  MessageSquare
-} from 'lucide-react';
+import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMode } from '@/contexts/ModeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { ExpertiseDeclaration } from '@/components/teaching/ExpertiseDeclaration';
+import { LiveSessionTracker } from '@/components/teaching/LiveSessionTracker';
+import { TeachingRequestsInbox } from '@/components/teaching/TeachingRequestsInbox';
+import { TeachingStats } from '@/components/teaching/TeachingStats';
+import { TeachingReviewPrompt } from '@/components/teaching/TeachingReviewPrompt';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { Database } from '@/integrations/supabase/types';
 
-const stats = [
-  { label: 'Total Hours Taught', value: '24.5', icon: Clock, change: '+2.5h this week' },
-  { label: 'Active Students', value: '12', icon: Users, change: '+3 new' },
-  { label: 'Average Rating', value: '4.8', icon: Star, change: 'From 18 reviews' },
-  { label: 'Credits Earned', value: '49', icon: TrendingUp, change: '+6 this week' },
-];
+type DomainTag = Database['public']['Enums']['domain_tag'];
 
-const upcomingSessions = [
-  { id: 1, title: 'React Fundamentals', learners: 3, time: '2:00 PM', duration: '1h' },
-  { id: 2, title: 'TypeScript Basics', learners: 5, time: '4:30 PM', duration: '1.5h' },
-];
+interface Expertise {
+  id: string;
+  expertise_text: string;
+  domain_tag: DomainTag;
+}
 
-const recentFeedback = [
-  { id: 1, learner: 'Alex M.', rating: 5, comment: 'Great explanation of hooks!', session: 'React Fundamentals' },
-  { id: 2, learner: 'Sarah K.', rating: 5, comment: 'Very patient and thorough.', session: 'CSS Grid' },
-];
+interface UpcomingSession {
+  id: string;
+  title: string | null;
+  created_at: string;
+  status: string;
+}
+
+interface RecentFeedback {
+  id: string;
+  experience_rating: number;
+  feedback: string | null;
+  created_at: string;
+}
 
 export default function TeachingDashboard() {
   const { unlockMode } = useMode();
-  const [isSessionActive, setIsSessionActive] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  
+  const [showExpertiseForm, setShowExpertiseForm] = useState(false);
+  const [expertise, setExpertise] = useState<Expertise | null>(null);
+  const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
+  const [recentFeedback, setRecentFeedback] = useState<RecentFeedback[]>([]);
+  const [pendingReviewSessionId, setPendingReviewSessionId] = useState<string | null>(null);
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchExpertise();
+      fetchUpcomingSessions();
+      fetchRecentFeedback();
+      checkPendingReviews();
+    }
+  }, [user]);
+
+  const fetchExpertise = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('teacher_expertise')
+      .select('id, expertise_text, domain_tag')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    setExpertise(data);
+  };
+
+  const fetchUpcomingSessions = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('teaching_sessions')
+      .select('id, title, created_at, status')
+      .eq('teacher_id', user.id)
+      .in('status', ['pending', 'scheduled'])
+      .order('created_at', { ascending: true })
+      .limit(5);
+    
+    setUpcomingSessions(data || []);
+  };
+
+  const fetchRecentFeedback = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('teaching_reviews')
+      .select('id, experience_rating, feedback, created_at')
+      .eq('teacher_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(4);
+    
+    setRecentFeedback(data || []);
+  };
+
+  const checkPendingReviews = async () => {
+    if (!user) return;
+    
+    // Find completed sessions without reviews
+    const { data: sessions } = await supabase
+      .from('teaching_sessions')
+      .select('id')
+      .eq('teacher_id', user.id)
+      .eq('status', 'completed');
+    
+    if (!sessions?.length) return;
+    
+    const { data: reviews } = await supabase
+      .from('teaching_reviews')
+      .select('session_id')
+      .eq('teacher_id', user.id);
+    
+    const reviewedSessionIds = new Set(reviews?.map(r => r.session_id) || []);
+    const pendingSession = sessions.find(s => !reviewedSessionIds.has(s.id));
+    
+    if (pendingSession) {
+      setPendingReviewSessionId(pendingSession.id);
+      setShowReviewPrompt(true);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (showExpertiseForm) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen p-6 lg:p-8">
+          <ExpertiseDeclaration
+            existingExpertise={expertise}
+            onComplete={() => {
+              setShowExpertiseForm(false);
+              fetchExpertise();
+            }}
+          />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -56,43 +176,55 @@ export default function TeachingDashboard() {
             >
               Switch Mode
             </Button>
-            <Button variant="chrono" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Session
+            <Button 
+              variant="chrono" 
+              className="gap-2"
+              onClick={() => setShowExpertiseForm(true)}
+            >
+              {expertise ? (
+                <>
+                  <Edit2 className="h-4 w-4" />
+                  Edit Expertise
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  Declare Expertise
+                </>
+              )}
             </Button>
           </div>
         </div>
 
+        {/* Expertise Display */}
+        {expertise && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-full bg-primary/10 p-3">
+                    <Lightbulb className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground mb-1">Your Current Expertise</h3>
+                    <p className="text-muted-foreground">{expertise.expertise_text}</p>
+                    <span className="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-primary/10 text-primary capitalize">
+                      {expertise.domain_tag.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Stats Grid */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">{stat.label}</p>
-                        <p className="mt-1 font-display text-3xl font-bold text-foreground">
-                          {stat.value}
-                        </p>
-                        <p className="mt-1 text-xs text-primary">{stat.change}</p>
-                      </div>
-                      <div className="rounded-lg bg-primary/10 p-2.5">
-                        <Icon className="h-5 w-5 text-primary" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
+        <div className="mb-8">
+          <TeachingStats />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -102,55 +234,23 @@ export default function TeachingDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PlayCircle className="h-5 w-5 text-primary" />
-                  Quick Start Session
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="mb-4 text-muted-foreground">
-                  Start a live session instantly and let learners join you.
-                </p>
-                <Button 
-                  variant="chrono" 
-                  className="w-full gap-2"
-                  onClick={() => setIsSessionActive(!isSessionActive)}
-                >
-                  {isSessionActive ? (
-                    <>
-                      <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                      End Session
-                    </>
-                  ) : (
-                    <>
-                      <PlayCircle className="h-4 w-4" />
-                      Start Live Session
-                    </>
-                  )}
-                </Button>
-                {isSessionActive && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="mt-4 rounded-lg bg-green-500/10 border border-green-500/30 p-4"
-                  >
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-sm font-medium">Session is live • 0:00:00</span>
-                    </div>
-                  </motion.div>
-                )}
-              </CardContent>
-            </Card>
+            <LiveSessionTracker />
+          </motion.div>
+
+          {/* Teaching Requests Inbox */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <TeachingRequestsInbox />
           </motion.div>
 
           {/* Upcoming Sessions */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.6 }}
           >
             <Card>
               <CardHeader>
@@ -160,24 +260,28 @@ export default function TeachingDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {upcomingSessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:border-primary/50"
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">{session.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {session.learners} learners • {session.duration}
-                      </p>
+                {upcomingSessions.length > 0 ? (
+                  upcomingSessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:border-primary/50"
+                    >
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {session.title || 'Teaching Session'}
+                        </p>
+                        <p className="text-sm text-muted-foreground capitalize">
+                          {session.status}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(session.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-display font-semibold text-primary">{session.time}</p>
-                      <p className="text-xs text-muted-foreground">Today</p>
-                    </div>
-                  </div>
-                ))}
-                {upcomingSessions.length === 0 && (
+                  ))
+                ) : (
                   <p className="py-8 text-center text-muted-foreground">
                     No upcoming sessions scheduled
                   </p>
@@ -190,8 +294,7 @@ export default function TeachingDashboard() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="lg:col-span-2"
+            transition={{ delay: 0.7 }}
           >
             <Card>
               <CardHeader>
@@ -201,29 +304,52 @@ export default function TeachingDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {recentFeedback.map((feedback) => (
-                    <div
-                      key={feedback.id}
-                      className="rounded-lg border border-border p-4"
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="font-medium text-foreground">{feedback.learner}</span>
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: feedback.rating }).map((_, i) => (
-                            <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                          ))}
+                {recentFeedback.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentFeedback.map((feedback) => (
+                      <div
+                        key={feedback.id}
+                        className="rounded-lg border border-border p-4"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(feedback.created_at).toLocaleDateString()}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: feedback.experience_rating }).map((_, i) => (
+                              <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                            ))}
+                          </div>
                         </div>
+                        {feedback.feedback && (
+                          <p className="text-sm text-muted-foreground">"{feedback.feedback}"</p>
+                        )}
                       </div>
-                      <p className="mb-2 text-sm text-muted-foreground">"{feedback.comment}"</p>
-                      <p className="text-xs text-muted-foreground">Session: {feedback.session}</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-8 text-center text-muted-foreground">
+                    No feedback yet
+                  </p>
+                )}
               </CardContent>
             </Card>
           </motion.div>
         </div>
+
+        {/* Review Prompt Dialog */}
+        {pendingReviewSessionId && (
+          <TeachingReviewPrompt
+            sessionId={pendingReviewSessionId}
+            open={showReviewPrompt}
+            onOpenChange={setShowReviewPrompt}
+            onComplete={() => {
+              setShowReviewPrompt(false);
+              setPendingReviewSessionId(null);
+              fetchRecentFeedback();
+            }}
+          />
+        )}
       </div>
     </MainLayout>
   );
