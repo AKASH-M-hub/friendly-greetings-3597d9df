@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ModeProvider } from "@/contexts/ModeContext";
+import { CustomCursor } from "@/components/effects/CustomCursor";
+import { AmbientBackground } from "@/components/effects/AmbientBackground";
 import ModeSelection from "./pages/ModeSelection";
 import TeachingDashboard from "./pages/TeachingDashboard";
 import LearningDashboard from "./pages/LearningDashboard";
@@ -19,6 +21,8 @@ const App = () => (
     <ThemeProvider>
       <ModeProvider>
         <TooltipProvider>
+          <CustomCursor />
+          <AmbientBackground />
           <Toaster />
           <Sonner />
           <BrowserRouter>
