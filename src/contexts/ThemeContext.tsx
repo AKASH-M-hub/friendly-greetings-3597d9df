@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'sunset' | 'aqua';
 
 interface ThemeContextType {
   theme: Theme;
@@ -15,20 +15,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('chrono-theme') as Theme;
       if (stored) return stored;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return 'sunset';
     }
-    return 'dark';
+    return 'sunset';
   });
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
+    root.classList.remove('light', 'dark', 'sunset', 'aqua');
     root.classList.add(theme);
     localStorage.setItem('chrono-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setThemeState(prev => prev === 'light' ? 'dark' : 'light');
+    setThemeState(prev => {
+      if (prev === 'light') return 'dark';
+      if (prev === 'dark') return 'sunset';
+      if (prev === 'sunset') return 'aqua';
+      return 'light';
+    });
   };
 
   const setTheme = (newTheme: Theme) => {
