@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
@@ -13,18 +13,24 @@ import {
   Zap,
   Menu,
   X,
-  Palette
+  Sun,
+  Moon,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme, Theme } from '@/contexts/ThemeContext';
 import { useMode } from '@/contexts/ModeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 
 interface NavItem {
@@ -43,11 +49,51 @@ const mainNavItems: NavItem[] = [
 
 export function TopNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [totalCredits, setTotalCredits] = useState(0);
   const { theme, setTheme, themes } = useTheme();
   const { currentMode } = useMode();
+  const { user, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const totalCredits = 24;
+  // Fetch real credits from database
+  useEffect(() => {
+    if (user) {
+      fetchCredits();
+    }
+  }, [user]);
+
+  const fetchCredits = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('teaching_sessions')
+      .select('credits_earned')
+      .eq('teacher_id', user.id)
+      .eq('status', 'completed');
+
+    const total = data?.reduce((sum, s) => sum + (s.credits_earned || 0), 0) || 0;
+    setTotalCredits(total);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const isDark = theme === 'dark';
+  const isLight = theme === 'light';
+
+  // Quick toggle between light/dark or cycle through color themes
+  const toggleLightDark = () => {
+    if (isLight) {
+      setTheme('dark');
+    } else if (isDark) {
+      setTheme('sunset');
+    } else {
+      setTheme('light');
+    }
+  };
 
   return (
     <>
@@ -95,14 +141,16 @@ export function TopNavbar() {
           {/* Right Section */}
           <div className="flex items-center gap-3">
             {/* Credits Display */}
-            <div className="hidden items-center gap-2 rounded-full bg-primary/10 px-4 py-2 sm:flex">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold text-foreground">{totalCredits}</span>
-              <span className="text-xs text-muted-foreground">credits</span>
-            </div>
+            {user && (
+              <div className="hidden items-center gap-2 rounded-full bg-primary/10 px-4 py-2 sm:flex">
+                <Zap className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">{totalCredits}</span>
+                <span className="text-xs text-muted-foreground">credits</span>
+              </div>
+            )}
 
             {/* Mode Indicator */}
-            {currentMode && (
+            {currentMode && user && (
               <div className="hidden items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 lg:flex">
                 {currentMode === 'teaching' ? (
                   <GraduationCap className="h-4 w-4 text-primary" />
@@ -116,40 +164,76 @@ export function TopNavbar() {
               </div>
             )}
 
-            {/* Theme Selector */}
+            {/* Theme Toggle Button - Light/Dark quick switch */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9"
+              onClick={toggleLightDark}
+            >
+              {isDark ? (
+                <Moon className="h-5 w-5 text-muted-foreground" />
+              ) : isLight ? (
+                <Sun className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <div 
+                  className="h-5 w-5 rounded-full border border-border"
+                  style={{ backgroundColor: themes.find(t => t.id === theme)?.color }}
+                />
+              )}
+            </Button>
+
+            {/* Theme Selector Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Palette className="h-5 w-5 text-muted-foreground" />
+                <Button variant="ghost" size="sm" className="hidden sm:flex gap-2 text-xs">
+                  Theme
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  Choose Theme
-                </div>
+                <DropdownMenuLabel>Choose Theme</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {themes.map((t) => (
+                
+                {/* Light/Dark Mode */}
+                <DropdownMenuItem
+                  onClick={() => setTheme('light')}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
+                  <Sun className="h-4 w-4" />
+                  <span className="flex-1">Light Mode</span>
+                  {theme === 'light' && <span className="text-primary">✓</span>}
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem
+                  onClick={() => setTheme('dark')}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
+                  <Moon className="h-4 w-4" />
+                  <span className="flex-1">Dark Mode</span>
+                  {theme === 'dark' && <span className="text-primary">✓</span>}
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Color Schemes</DropdownMenuLabel>
+                
+                {themes.filter(t => !['light', 'dark'].includes(t.id)).map((t) => (
                   <DropdownMenuItem
                     key={t.id}
                     onClick={() => setTheme(t.id)}
-                    className={cn(
-                      "flex items-center gap-3 cursor-pointer",
-                      theme === t.id && "bg-primary/10"
-                    )}
+                    className="flex items-center gap-3 cursor-pointer"
                   >
                     <div 
-                      className="h-4 w-4 rounded-full ring-2 ring-offset-2 ring-offset-background"
-                      style={{ backgroundColor: t.color, boxShadow: theme === t.id ? `0 0 10px ${t.color}` : 'none' }}
+                      className="h-4 w-4 rounded-full border border-border/50" 
+                      style={{ backgroundColor: t.color }}
                     />
-                    <span className={cn(theme === t.id && "font-medium text-primary")}>
-                      {t.name}
-                    </span>
+                    <span className="flex-1">{t.name}</span>
+                    {theme === t.id && <span className="text-primary">✓</span>}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Profile & Settings */}
+            {/* Profile & Settings / Auth */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -157,18 +241,37 @@ export function TopNavbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
-                    <User className="h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
+                {user ? (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                        <User className="h-4 w-4" />
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2 cursor-pointer text-destructive"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link to="/auth" className="flex items-center gap-2 cursor-pointer">
+                      <LogIn className="h-4 w-4" />
+                      Sign In
+                    </Link>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -223,9 +326,72 @@ export function TopNavbar() {
                 <div className="my-2 border-t border-border" />
                 
                 {/* Credits in mobile */}
-                <div className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-3">
-                  <Zap className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-semibold">{totalCredits} credits available</span>
+                {user && (
+                  <div className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-3">
+                    <Zap className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-semibold">{totalCredits} credits available</span>
+                  </div>
+                )}
+
+                {/* Theme selector in mobile */}
+                <div className="mt-2 flex items-center gap-2 px-4">
+                  <span className="text-sm text-muted-foreground mr-2">Theme:</span>
+                  <Button
+                    variant={isLight ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setTheme('light')}
+                    className="h-8"
+                  >
+                    <Sun className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={isDark ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setTheme('dark')}
+                    className="h-8"
+                  >
+                    <Moon className="h-4 w-4" />
+                  </Button>
+                  {themes.filter(t => !['light', 'dark'].includes(t.id)).map((t) => (
+                    <Button
+                      key={t.id}
+                      variant={theme === t.id ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setTheme(t.id)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <div 
+                        className="h-4 w-4 rounded-full" 
+                        style={{ backgroundColor: t.color }}
+                      />
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Auth in mobile */}
+                <div className="mt-2">
+                  {user ? (
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start gap-3 text-destructive"
+                      onClick={() => {
+                        handleSignOut();
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Sign Out
+                    </Button>
+                  ) : (
+                    <Link
+                      to="/auth"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-primary hover:bg-primary/10"
+                    >
+                      <LogIn className="h-5 w-5" />
+                      Sign In
+                    </Link>
+                  )}
                 </div>
               </nav>
             </motion.div>
