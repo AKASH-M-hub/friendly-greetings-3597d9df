@@ -1,24 +1,145 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Coins, 
-  TrendingUp, 
-  TrendingDown, 
-  Clock, 
-  ArrowUpRight,
-  ArrowDownRight,
-  Wallet,
-  Unlock
+  Unlock,
+  Coins
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CreditWallet, WalletStats, CreditTransaction } from '@/components/credits/CreditWallet';
+import { DualSessionLog, SessionLogEntry } from '@/components/credits/DualSessionLog';
 
-const creditHistory = [
-  { id: 1, type: 'earned', amount: 2, description: 'React Fundamentals Session', date: 'Today, 2:30 PM', duration: '1h' },
-  { id: 2, type: 'spent', amount: 1, description: 'Spanish Conversation', date: 'Today, 11:00 AM', duration: '1h' },
-  { id: 3, type: 'earned', amount: 3, description: 'Advanced TypeScript', date: 'Yesterday, 4:00 PM', duration: '1.5h' },
-  { id: 4, type: 'spent', amount: 1, description: 'UI Design Basics', date: 'Yesterday, 10:00 AM', duration: '1h' },
-  { id: 5, type: 'earned', amount: 2, description: 'JavaScript Essentials', date: '2 days ago', duration: '1h' },
+// Mock data - would come from database
+const mockWalletStats: WalletStats = {
+  totalBalance: 24,
+  totalEarned: 45,
+  totalSpent: 21,
+  heldCredits: 0,
+  earnedThisWeek: 7,
+  spentThisWeek: 3,
+};
+
+const mockTransactions: CreditTransaction[] = [
+  { 
+    id: '1', 
+    type: 'earned', 
+    amount: 2, 
+    description: 'React Fundamentals Session', 
+    partnerName: 'John Smith',
+    date: 'Today', 
+    time: '2:30 PM',
+    sessionDuration: '1h',
+    status: 'completed'
+  },
+  { 
+    id: '2', 
+    type: 'spent', 
+    amount: 1, 
+    description: 'Spanish Conversation', 
+    partnerName: 'Carlos Rivera',
+    date: 'Today', 
+    time: '11:00 AM',
+    sessionDuration: '1h',
+    status: 'completed'
+  },
+  { 
+    id: '3', 
+    type: 'earned', 
+    amount: 3, 
+    description: 'Advanced TypeScript', 
+    partnerName: 'Sarah Lee',
+    date: 'Yesterday', 
+    time: '4:00 PM',
+    sessionDuration: '1.5h',
+    status: 'completed'
+  },
+  { 
+    id: '4', 
+    type: 'spent', 
+    amount: 1, 
+    description: 'UI Design Basics', 
+    partnerName: 'Emma Wilson',
+    date: 'Yesterday', 
+    time: '10:00 AM',
+    sessionDuration: '1h',
+    status: 'completed'
+  },
+  { 
+    id: '5', 
+    type: 'earned', 
+    amount: 2, 
+    description: 'JavaScript Essentials', 
+    partnerName: 'Mike Brown',
+    date: '2 days ago', 
+    time: '3:00 PM',
+    sessionDuration: '1h',
+    status: 'completed'
+  },
+];
+
+const mockSessionLog: SessionLogEntry[] = [
+  {
+    id: '1',
+    sessionId: 'sess-abc123',
+    role: 'teacher',
+    partnerName: 'John Smith',
+    topic: 'React Fundamentals',
+    date: 'Today',
+    time: '2:30 PM',
+    duration: '1h',
+    durationMinutes: 60,
+    creditsEarned: 2,
+    status: 'completed',
+    confirmedByTeacher: true,
+    confirmedByLearner: true,
+  },
+  {
+    id: '2',
+    sessionId: 'sess-def456',
+    role: 'learner',
+    partnerName: 'Carlos Rivera',
+    topic: 'Spanish Conversation',
+    date: 'Today',
+    time: '11:00 AM',
+    duration: '1h',
+    durationMinutes: 60,
+    creditsSpent: 1,
+    status: 'completed',
+    confirmedByTeacher: true,
+    confirmedByLearner: true,
+  },
+  {
+    id: '3',
+    sessionId: 'sess-ghi789',
+    role: 'teacher',
+    partnerName: 'Sarah Lee',
+    topic: 'Advanced TypeScript',
+    date: 'Yesterday',
+    time: '4:00 PM',
+    duration: '1.5h',
+    durationMinutes: 90,
+    creditsEarned: 3,
+    status: 'completed',
+    confirmedByTeacher: true,
+    confirmedByLearner: true,
+  },
+  {
+    id: '4',
+    sessionId: 'sess-jkl012',
+    role: 'learner',
+    partnerName: 'Emma Wilson',
+    topic: 'UI Design Basics',
+    date: 'Yesterday',
+    time: '10:00 AM',
+    duration: '1h',
+    durationMinutes: 60,
+    creditsSpent: 1,
+    status: 'pending-confirmation',
+    confirmedByTeacher: true,
+    confirmedByLearner: false,
+  },
 ];
 
 const unlockableFeatures = [
@@ -28,9 +149,7 @@ const unlockableFeatures = [
 ];
 
 export default function Credits() {
-  const totalCredits = 24;
-  const earnedThisWeek = 7;
-  const spentThisWeek = 3;
+  const [activeTab, setActiveTab] = useState('wallet');
 
   return (
     <MainLayout>
@@ -45,188 +164,65 @@ export default function Credits() {
           </p>
         </div>
 
-        {/* Main Stats */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
-                    <Wallet className="h-7 w-7 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Balance</p>
-                    <p className="font-display text-4xl font-bold text-foreground">{totalCredits}</p>
-                    <p className="text-xs text-primary">Credits available</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="wallet">Credit Wallet</TabsTrigger>
+            <TabsTrigger value="sessions">Session History</TabsTrigger>
+          </TabsList>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-500/20">
-                    <TrendingUp className="h-7 w-7 text-green-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Earned This Week</p>
-                    <p className="font-display text-4xl font-bold text-foreground">+{earnedThisWeek}</p>
-                    <p className="text-xs text-green-500">From teaching</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              <TabsContent value="wallet" className="mt-0">
+                <CreditWallet stats={mockWalletStats} transactions={mockTransactions} />
+              </TabsContent>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                    <TrendingDown className="h-7 w-7 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Spent This Week</p>
-                    <p className="font-display text-4xl font-bold text-foreground">-{spentThisWeek}</p>
-                    <p className="text-xs text-muted-foreground">On learning</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+              <TabsContent value="sessions" className="mt-0">
+                <DualSessionLog sessions={mockSessionLog} />
+              </TabsContent>
+            </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Transaction History */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
-                  Transaction History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {creditHistory.map((transaction, index) => (
+            {/* Sidebar - Unlockable Features */}
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Unlock className="h-5 w-5 text-muted-foreground" />
+                    Unlock Features
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {unlockableFeatures.map((feature, index) => (
                     <motion.div
-                      key={transaction.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:border-primary/30"
+                      key={feature.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="rounded-lg border border-border p-4 transition-colors hover:border-primary/50"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                          transaction.type === 'earned' 
-                            ? 'bg-green-500/20 text-green-500' 
-                            : 'bg-primary/20 text-primary'
-                        }`}>
-                          {transaction.type === 'earned' ? (
-                            <ArrowUpRight className="h-5 w-5" />
-                          ) : (
-                            <ArrowDownRight className="h-5 w-5" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">{transaction.description}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {transaction.date} • {transaction.duration}
-                          </p>
-                        </div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="font-medium text-foreground">{feature.name}</h3>
+                        <span className="flex items-center gap-1 font-display font-bold text-primary">
+                          <Coins className="h-4 w-4" />
+                          {feature.cost}
+                        </span>
                       </div>
-                      <div className={`font-display text-lg font-bold ${
-                        transaction.type === 'earned' ? 'text-green-500' : 'text-foreground'
-                      }`}>
-                        {transaction.type === 'earned' ? '+' : '-'}{transaction.amount}
-                      </div>
+                      <p className="mb-3 text-sm text-muted-foreground">{feature.description}</p>
+                      <Button 
+                        variant="chrono-outline" 
+                        size="sm" 
+                        className="w-full"
+                        disabled={mockWalletStats.totalBalance < feature.cost}
+                      >
+                        {mockWalletStats.totalBalance >= feature.cost ? 'Unlock Now' : 'Not Enough Credits'}
+                      </Button>
                     </motion.div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-
-          {/* Unlockable Features */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Unlock className="h-5 w-5 text-muted-foreground" />
-                  Unlock Features
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {unlockableFeatures.map((feature) => (
-                  <div
-                    key={feature.id}
-                    className="rounded-lg border border-border p-4 transition-colors hover:border-primary/50"
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <h3 className="font-medium text-foreground">{feature.name}</h3>
-                      <span className="flex items-center gap-1 font-display font-bold text-primary">
-                        <Coins className="h-4 w-4" />
-                        {feature.cost}
-                      </span>
-                    </div>
-                    <p className="mb-3 text-sm text-muted-foreground">{feature.description}</p>
-                    <Button 
-                      variant="chrono-outline" 
-                      size="sm" 
-                      className="w-full"
-                      disabled={totalCredits < feature.cost}
-                    >
-                      {totalCredits >= feature.cost ? 'Unlock Now' : 'Not Enough Credits'}
-                    </Button>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* How Credits Work */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-base">How Credits Work</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">Teaching</p>
-                      <p className="text-muted-foreground">+2 credits/hour</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/20">
-                      <TrendingDown className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">Learning</p>
-                      <p className="text-muted-foreground">-1 credit/hour</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        </Tabs>
       </div>
     </MainLayout>
   );
