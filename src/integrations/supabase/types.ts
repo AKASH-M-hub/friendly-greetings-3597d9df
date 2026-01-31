@@ -79,6 +79,45 @@ export type Database = {
           },
         ]
       }
+      compatibility_scores: {
+        Row: {
+          block_reason: string | null
+          created_at: string
+          energy_compatibility: number | null
+          id: string
+          intent_compatibility: number | null
+          is_blocked: boolean | null
+          overall_score: number | null
+          updated_at: string
+          user_a_id: string
+          user_b_id: string
+        }
+        Insert: {
+          block_reason?: string | null
+          created_at?: string
+          energy_compatibility?: number | null
+          id?: string
+          intent_compatibility?: number | null
+          is_blocked?: boolean | null
+          overall_score?: number | null
+          updated_at?: string
+          user_a_id: string
+          user_b_id: string
+        }
+        Update: {
+          block_reason?: string | null
+          created_at?: string
+          energy_compatibility?: number | null
+          id?: string
+          intent_compatibility?: number | null
+          is_blocked?: boolean | null
+          overall_score?: number | null
+          updated_at?: string
+          user_a_id?: string
+          user_b_id?: string
+        }
+        Relationships: []
+      }
       decision_reliability: {
         Row: {
           created_at: string | null
@@ -310,6 +349,77 @@ export type Database = {
           teacher_id?: string
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      session_adjustments: {
+        Row: {
+          adjusted_by: string | null
+          adjusted_duration_minutes: number
+          adjustment_reason: string | null
+          created_at: string
+          id: string
+          original_duration_minutes: number
+          session_id: string | null
+        }
+        Insert: {
+          adjusted_by?: string | null
+          adjusted_duration_minutes: number
+          adjustment_reason?: string | null
+          created_at?: string
+          id?: string
+          original_duration_minutes: number
+          session_id?: string | null
+        }
+        Update: {
+          adjusted_by?: string | null
+          adjusted_duration_minutes?: number
+          adjustment_reason?: string | null
+          created_at?: string
+          id?: string
+          original_duration_minutes?: number
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_adjustments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_intent: {
+        Row: {
+          created_at: string
+          energy_level: string
+          id: string
+          intent_type: string
+          is_active: boolean | null
+          preferred_duration_minutes: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          energy_level: string
+          id?: string
+          intent_type: string
+          is_active?: boolean | null
+          preferred_duration_minutes?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          energy_level?: string
+          id?: string
+          intent_type?: string
+          is_active?: boolean | null
+          preferred_duration_minutes?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
