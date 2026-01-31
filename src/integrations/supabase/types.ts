@@ -14,7 +14,242 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_conversations: {
+        Row: {
+          context_mode: string | null
+          context_session_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          context_mode?: string | null
+          context_session_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          context_mode?: string | null
+          context_session_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_reliability: {
+        Row: {
+          created_at: string | null
+          decision_type: string
+          explanation: string | null
+          id: string
+          reliability_index: number
+          uncertainty_flagged: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          decision_type: string
+          explanation?: string | null
+          id?: string
+          reliability_index?: number
+          uncertainty_flagged?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          decision_type?: string
+          explanation?: string | null
+          id?: string
+          reliability_index?: number
+          uncertainty_flagged?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      exchange_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          hours: number
+          id: string
+          partner_user_id: string | null
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          hours: number
+          id?: string
+          partner_user_id?: string | null
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          hours?: number
+          id?: string
+          partner_user_id?: string | null
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fairness_tracking: {
+        Row: {
+          cooldown_until: string | null
+          created_at: string | null
+          fairness_score: number | null
+          give_receive_ratio: number | null
+          id: string
+          last_nudge_at: string | null
+          one_sided_flags: number | null
+          total_given_hours: number | null
+          total_received_hours: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cooldown_until?: string | null
+          created_at?: string | null
+          fairness_score?: number | null
+          give_receive_ratio?: number | null
+          id?: string
+          last_nudge_at?: string | null
+          one_sided_flags?: number | null
+          total_given_hours?: number | null
+          total_received_hours?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cooldown_until?: string | null
+          created_at?: string | null
+          fairness_score?: number | null
+          give_receive_ratio?: number | null
+          id?: string
+          last_nudge_at?: string | null
+          one_sided_flags?: number | null
+          total_given_hours?: number | null
+          total_received_hours?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      historical_accuracy: {
+        Row: {
+          accuracy_score: number | null
+          actual_outcome: string | null
+          created_at: string | null
+          evaluated_at: string | null
+          id: string
+          prediction_made: string | null
+          recommendation_type: string
+          user_id: string
+        }
+        Insert: {
+          accuracy_score?: number | null
+          actual_outcome?: string | null
+          created_at?: string | null
+          evaluated_at?: string | null
+          id?: string
+          prediction_made?: string | null
+          recommendation_type: string
+          user_id: string
+        }
+        Update: {
+          accuracy_score?: number | null
+          actual_outcome?: string | null
+          created_at?: string | null
+          evaluated_at?: string | null
+          id?: string
+          prediction_made?: string | null
+          recommendation_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trust_scores: {
+        Row: {
+          confidence_percentage: number
+          created_at: string | null
+          data_consistency_score: number | null
+          data_freshness_days: number | null
+          data_source: string
+          id: string
+          last_calculated: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence_percentage?: number
+          created_at?: string | null
+          data_consistency_score?: number | null
+          data_freshness_days?: number | null
+          data_source: string
+          id?: string
+          last_calculated?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence_percentage?: number
+          created_at?: string | null
+          data_consistency_score?: number | null
+          data_freshness_days?: number | null
+          data_source?: string
+          id?: string
+          last_calculated?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
