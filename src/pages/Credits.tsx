@@ -3,7 +3,9 @@ import { motion } from 'framer-motion';
 import { 
   Unlock,
   Coins,
-  Loader2
+  Loader2,
+  Shield,
+  Scale
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditWallet } from '@/components/credits/CreditWallet';
 import { DualSessionLog } from '@/components/credits/DualSessionLog';
+import { TrustScoreDisplay } from '@/components/trust/TrustScoreDisplay';
+import { FairnessGuardian } from '@/components/fairness/FairnessGuardian';
 import { useCreditData } from '@/hooks/useSessionData';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -72,14 +76,18 @@ export default function Credits() {
             Credit Dashboard
           </h1>
           <p className="text-muted-foreground">
-            Track your time-to-value conversions
+            Track your time-to-value conversions with trust & fairness insights
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="wallet">Credit Wallet</TabsTrigger>
             <TabsTrigger value="sessions">Session History</TabsTrigger>
+            <TabsTrigger value="insights" className="gap-1">
+              <Shield className="h-3 w-3" />
+              Trust & Fairness
+            </TabsTrigger>
           </TabsList>
 
           <div className="grid gap-6 lg:grid-cols-3">
@@ -92,10 +100,56 @@ export default function Credits() {
               <TabsContent value="sessions" className="mt-0">
                 <DualSessionLog sessions={sessionLog} />
               </TabsContent>
+
+              <TabsContent value="insights" className="mt-0 space-y-6">
+                {/* Trust Score Section */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <TrustScoreDisplay />
+                </motion.div>
+
+                {/* Fairness Guardian Section */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <FairnessGuardian />
+                </motion.div>
+
+                {/* Insights Info Card */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="rounded-full bg-primary/10 p-3">
+                          <Scale className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-foreground mb-1">
+                            How Trust & Fairness Work
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Your <strong>Trust Score</strong> indicates how confident our system is in recommendations based on your activity history. 
+                            The <strong>Fairness Guardian</strong> ensures balanced exchanges by tracking your give/receive ratio.
+                            A healthy balance means you're contributing to and benefiting from the community fairly.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </TabsContent>
             </div>
 
             {/* Sidebar - Unlockable Features */}
-            <div>
+            <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -132,6 +186,33 @@ export default function Credits() {
                   ))}
                 </CardContent>
               </Card>
+
+              {/* Quick Stats Card */}
+              {activeTab !== 'insights' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <Card className="border-border/50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Quick Insights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start text-sm"
+                        onClick={() => setActiveTab('insights')}
+                      >
+                        <Shield className="mr-2 h-4 w-4 text-primary" />
+                        View Trust & Fairness
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
             </div>
           </div>
         </Tabs>
