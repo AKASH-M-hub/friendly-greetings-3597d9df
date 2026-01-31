@@ -14,11 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      product_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          rating: number
+          review_text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rating: number
+          review_text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
-          display_name: string
+          display_name: string | null
           id: string
           updated_at: string
           user_id: string
@@ -26,7 +53,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
-          display_name: string
+          display_name?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -34,63 +61,98 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
-          display_name?: string
+          display_name?: string | null
           id?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
+      seminars: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          duration: string
+          id: string
+          is_active: boolean
+          max_learners: number
+          prerequisites: string | null
+          skill_level: string
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          duration?: string
+          id?: string
+          is_active?: boolean
+          max_learners?: number
+          prerequisites?: string | null
+          skill_level?: string
+          teacher_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration?: string
+          id?: string
+          is_active?: boolean
+          max_learners?: number
+          prerequisites?: string | null
+          skill_level?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       session_requests: {
         Row: {
           created_at: string
-          expertise_id: string | null
           id: string
           learner_id: string
           message: string | null
-          scheduled_at: string | null
-          session_id: string | null
-          status: Database["public"]["Enums"]["request_status"]
+          scheduled_date: string | null
+          seminar_id: string
+          status: string
           teacher_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          expertise_id?: string | null
           id?: string
           learner_id: string
           message?: string | null
-          scheduled_at?: string | null
-          session_id?: string | null
-          status?: Database["public"]["Enums"]["request_status"]
+          scheduled_date?: string | null
+          seminar_id: string
+          status?: string
           teacher_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          expertise_id?: string | null
           id?: string
           learner_id?: string
           message?: string | null
-          scheduled_at?: string | null
-          session_id?: string | null
-          status?: Database["public"]["Enums"]["request_status"]
+          scheduled_date?: string | null
+          seminar_id?: string
+          status?: string
           teacher_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "session_requests_expertise_id_fkey"
-            columns: ["expertise_id"]
+            foreignKeyName: "session_requests_seminar_id_fkey"
+            columns: ["seminar_id"]
             isOneToOne: false
-            referencedRelation: "teacher_expertise"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_requests_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "teaching_sessions"
+            referencedRelation: "seminars"
             referencedColumns: ["id"]
           },
         ]
@@ -98,7 +160,7 @@ export type Database = {
       teacher_expertise: {
         Row: {
           created_at: string
-          domain_tag: Database["public"]["Enums"]["domain_tag"]
+          domain_tag: string
           expertise_text: string
           id: string
           is_active: boolean
@@ -107,7 +169,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          domain_tag?: Database["public"]["Enums"]["domain_tag"]
+          domain_tag: string
           expertise_text: string
           id?: string
           is_active?: boolean
@@ -116,7 +178,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          domain_tag?: Database["public"]["Enums"]["domain_tag"]
+          domain_tag?: string
           expertise_text?: string
           id?: string
           is_active?: boolean
@@ -131,6 +193,7 @@ export type Database = {
           experience_rating: number
           feedback: string | null
           id: string
+          learner_id: string | null
           session_id: string
           teacher_id: string
         }
@@ -139,6 +202,7 @@ export type Database = {
           experience_rating: number
           feedback?: string | null
           id?: string
+          learner_id?: string | null
           session_id: string
           teacher_id: string
         }
@@ -147,6 +211,7 @@ export type Database = {
           experience_rating?: number
           feedback?: string | null
           id?: string
+          learner_id?: string | null
           session_id?: string
           teacher_id?: string
         }
@@ -154,7 +219,7 @@ export type Database = {
           {
             foreignKeyName: "teaching_reviews_session_id_fkey"
             columns: ["session_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "teaching_sessions"
             referencedColumns: ["id"]
           },
@@ -167,8 +232,9 @@ export type Database = {
           credits_earned: number | null
           ended_at: string | null
           id: string
+          learner_id: string | null
           started_at: string | null
-          status: Database["public"]["Enums"]["session_status"]
+          status: string
           teacher_id: string
           title: string | null
           updated_at: string
@@ -179,8 +245,9 @@ export type Database = {
           credits_earned?: number | null
           ended_at?: string | null
           id?: string
+          learner_id?: string | null
           started_at?: string | null
-          status?: Database["public"]["Enums"]["session_status"]
+          status?: string
           teacher_id: string
           title?: string | null
           updated_at?: string
@@ -191,8 +258,9 @@ export type Database = {
           credits_earned?: number | null
           ended_at?: string | null
           id?: string
+          learner_id?: string | null
           started_at?: string | null
-          status?: Database["public"]["Enums"]["session_status"]
+          status?: string
           teacher_id?: string
           title?: string | null
           updated_at?: string
@@ -207,24 +275,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      domain_tag:
-        | "cs"
-        | "math"
-        | "design"
-        | "science"
-        | "language"
-        | "music"
-        | "business"
-        | "other"
-      request_status: "pending" | "accepted" | "declined" | "scheduled"
-      session_status:
-        | "pending"
-        | "accepted"
-        | "declined"
-        | "scheduled"
-        | "active"
-        | "completed"
-        | "cancelled"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -351,27 +402,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      domain_tag: [
-        "cs",
-        "math",
-        "design",
-        "science",
-        "language",
-        "music",
-        "business",
-        "other",
-      ],
-      request_status: ["pending", "accepted", "declined", "scheduled"],
-      session_status: [
-        "pending",
-        "accepted",
-        "declined",
-        "scheduled",
-        "active",
-        "completed",
-        "cancelled",
-      ],
-    },
+    Enums: {},
   },
 } as const

@@ -15,7 +15,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AmbientBackground } from '@/components/effects/AmbientBackground';
-import { useTheme } from '@/contexts/ThemeContext';
+import { ThemeDropdown } from '@/components/ui/ThemeDropdown';
+import { ReviewSection } from '@/components/reviews/ReviewSection';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 const features = [
@@ -48,9 +50,8 @@ const stats = [
   { value: '4.9', label: 'Average Rating' },
 ];
 
-export default function Landing() {
+function LandingContent() {
   const navigate = useNavigate();
-  const { theme, themes, setTheme } = useTheme();
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -69,28 +70,12 @@ export default function Landing() {
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Theme Preview Dots */}
-            <div className="hidden items-center gap-2 md:flex">
-              {themes.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTheme(t.id)}
-                  className={cn(
-                    "h-3 w-3 rounded-full transition-all duration-300",
-                    theme === t.id ? "scale-125 ring-2 ring-offset-2 ring-offset-background" : "opacity-60 hover:opacity-100"
-                  )}
-                  style={{ 
-                    backgroundColor: t.color,
-                    boxShadow: theme === t.id ? `0 0 12px ${t.color}` : 'none'
-                  }}
-                  title={t.name}
-                />
-              ))}
-            </div>
+            {/* Theme Dropdown */}
+            <ThemeDropdown />
             
             <Button 
               variant="ghost" 
-              onClick={() => navigate('/mode')}
+              onClick={() => navigate('/auth')}
               className="text-muted-foreground hover:text-foreground"
             >
               Sign In
@@ -276,6 +261,9 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Review Section */}
+      <ReviewSection />
+
       {/* CTA Section */}
       <section className="relative py-24">
         <div className="mx-auto max-w-4xl px-4 text-center">
@@ -317,5 +305,13 @@ export default function Landing() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function Landing() {
+  return (
+    <AuthProvider>
+      <LandingContent />
+    </AuthProvider>
   );
 }
