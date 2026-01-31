@@ -8,9 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Database } from '@/integrations/supabase/types';
 
-type DomainTag = Database['public']['Enums']['domain_tag'];
+type DomainTag = 'cs' | 'math' | 'design' | 'science' | 'language' | 'music' | 'business' | 'other';
 
 const domainTags: { id: DomainTag; label: string; color: string }[] = [
   { id: 'cs', label: 'Computer Science', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },

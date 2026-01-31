@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb } from 'lucide-react';
+import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb, BookOpen, Trash2 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useMode } from '@/contexts/ModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExpertiseDeclaration } from '@/components/teaching/ExpertiseDeclaration';
@@ -11,11 +12,12 @@ import { LiveSessionTracker } from '@/components/teaching/LiveSessionTracker';
 import { TeachingRequestsInbox } from '@/components/teaching/TeachingRequestsInbox';
 import { TeachingStats } from '@/components/teaching/TeachingStats';
 import { TeachingReviewPrompt } from '@/components/teaching/TeachingReviewPrompt';
+import { CreateSeminarForm } from '@/components/teaching/CreateSeminarForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Database } from '@/integrations/supabase/types';
+import { toast } from 'sonner';
 
-type DomainTag = Database['public']['Enums']['domain_tag'];
+type DomainTag = 'cs' | 'math' | 'design' | 'science' | 'language' | 'music' | 'business' | 'other';
 
 interface Expertise {
   id: string;
@@ -37,13 +39,24 @@ interface RecentFeedback {
   created_at: string;
 }
 
+interface Seminar {
+  id: string;
+  title: string;
+  category: string;
+  skill_level: string;
+  duration: string;
+  is_active: boolean;
+}
+
 export default function TeachingDashboard() {
   const { unlockMode } = useMode();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   
   const [showExpertiseForm, setShowExpertiseForm] = useState(false);
+  const [showSeminarForm, setShowSeminarForm] = useState(false);
   const [expertise, setExpertise] = useState<Expertise | null>(null);
+  const [seminars, setSeminars] = useState<Seminar[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
   const [recentFeedback, setRecentFeedback] = useState<RecentFeedback[]>([]);
   const [pendingReviewSessionId, setPendingReviewSessionId] = useState<string | null>(null);
@@ -58,11 +71,38 @@ export default function TeachingDashboard() {
   useEffect(() => {
     if (user) {
       fetchExpertise();
+      fetchSeminars();
       fetchUpcomingSessions();
       fetchRecentFeedback();
       checkPendingReviews();
     }
   }, [user]);
+
+  const fetchSeminars = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('seminars')
+      .select('id, title, category, skill_level, duration, is_active')
+      .eq('teacher_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    setSeminars(data || []);
+  };
+
+  const deleteSeminar = async (id: string) => {
+    const { error } = await supabase
+      .from('seminars')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      toast.error('Failed to delete seminar');
+    } else {
+      toast.success('Seminar deleted');
+      fetchSeminars();
+    }
+  };
 
   const fetchExpertise = async () => {
     if (!user) return;
@@ -74,7 +114,9 @@ export default function TeachingDashboard() {
       .eq('is_active', true)
       .maybeSingle();
     
-    setExpertise(data);
+    if (data) {
+      setExpertise(data as Expertise);
+    }
   };
 
   const fetchUpcomingSessions = async () => {
@@ -156,6 +198,22 @@ export default function TeachingDashboard() {
     );
   }
 
+  if (showSeminarForm) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen p-6 lg:p-8">
+          <CreateSeminarForm
+            onComplete={() => {
+              setShowSeminarForm(false);
+              fetchSeminars();
+            }}
+            onCancel={() => setShowSeminarForm(false)}
+          />
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="min-h-screen p-6 lg:p-8">
@@ -169,7 +227,7 @@ export default function TeachingDashboard() {
               Share your knowledge and earn credits
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button 
               variant="chrono-outline" 
               onClick={() => unlockMode()}
@@ -177,7 +235,7 @@ export default function TeachingDashboard() {
               Switch Mode
             </Button>
             <Button 
-              variant="chrono" 
+              variant="outline" 
               className="gap-2"
               onClick={() => setShowExpertiseForm(true)}
             >
@@ -188,13 +246,67 @@ export default function TeachingDashboard() {
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" />
+                  <Lightbulb className="h-4 w-4" />
                   Declare Expertise
                 </>
               )}
             </Button>
+            <Button 
+              variant="chrono" 
+              className="gap-2"
+              onClick={() => setShowSeminarForm(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Create Seminar
+            </Button>
           </div>
         </div>
+
+        {/* My Seminars */}
+        {seminars.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-muted-foreground" />
+                  My Seminars
+                  <Badge variant="secondary" className="ml-auto">{seminars.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {seminars.map((seminar) => (
+                    <div
+                      key={seminar.id}
+                      className="rounded-lg border border-border p-4 transition-colors hover:border-primary/30"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-foreground line-clamp-1">{seminar.title}</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => deleteSeminar(seminar.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className="text-xs">{seminar.category}</Badge>
+                        <Badge variant="outline" className="text-xs">{seminar.skill_level}</Badge>
+                        <Badge variant="outline" className="text-xs">{seminar.duration}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Expertise Display */}
         {expertise && (
