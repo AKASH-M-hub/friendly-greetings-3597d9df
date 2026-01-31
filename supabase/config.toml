@@ -1,1 +1,4 @@
-project_id = "tvjsxvtoalmixiedjgpq"
+project_id = "nwpjymhpfdsmiakfjoxf"
+
+[functions.credi-ai-chat]
+verify_jwt = false
