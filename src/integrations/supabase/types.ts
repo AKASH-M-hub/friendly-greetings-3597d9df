@@ -214,6 +214,259 @@ export type Database = {
         }
         Relationships: []
       }
+      product_reviews: {
+        Row: {
+          created_at: string | null
+          id: string
+          rating: number
+          review_text: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rating: number
+          review_text: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rating?: number
+          review_text?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      seminars: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          duration: string | null
+          id: string
+          is_active: boolean | null
+          max_learners: number | null
+          prerequisites: string | null
+          skill_level: string | null
+          teacher_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          duration?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_learners?: number | null
+          prerequisites?: string | null
+          skill_level?: string | null
+          teacher_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          duration?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_learners?: number | null
+          prerequisites?: string | null
+          skill_level?: string | null
+          teacher_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      session_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          learner_id: string
+          message: string | null
+          scheduled_date: string | null
+          seminar_id: string
+          status: string | null
+          teacher_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          learner_id: string
+          message?: string | null
+          scheduled_date?: string | null
+          seminar_id: string
+          status?: string | null
+          teacher_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          learner_id?: string
+          message?: string | null
+          scheduled_date?: string | null
+          seminar_id?: string
+          status?: string | null
+          teacher_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_requests_seminar_id_fkey"
+            columns: ["seminar_id"]
+            isOneToOne: false
+            referencedRelation: "seminars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_expertise: {
+        Row: {
+          created_at: string | null
+          domain_tag: string
+          expertise_text: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          domain_tag: string
+          expertise_text: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          domain_tag?: string
+          expertise_text?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      teaching_reviews: {
+        Row: {
+          created_at: string | null
+          experience_rating: number
+          feedback: string | null
+          id: string
+          learner_id: string | null
+          session_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          experience_rating: number
+          feedback?: string | null
+          id?: string
+          learner_id?: string | null
+          session_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string | null
+          experience_rating?: number
+          feedback?: string | null
+          id?: string
+          learner_id?: string | null
+          session_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teaching_reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teaching_sessions: {
+        Row: {
+          actual_minutes: number | null
+          created_at: string | null
+          credits_earned: number | null
+          ended_at: string | null
+          id: string
+          learner_id: string | null
+          started_at: string | null
+          status: string | null
+          teacher_id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_minutes?: number | null
+          created_at?: string | null
+          credits_earned?: number | null
+          ended_at?: string | null
+          id?: string
+          learner_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          teacher_id: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_minutes?: number | null
+          created_at?: string | null
+          credits_earned?: number | null
+          ended_at?: string | null
+          id?: string
+          learner_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          teacher_id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       trust_scores: {
         Row: {
           confidence_percentage: number

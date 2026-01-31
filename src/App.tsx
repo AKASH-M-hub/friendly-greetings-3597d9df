@@ -8,6 +8,7 @@ import { ModeProvider } from "@/contexts/ModeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CustomCursor } from "@/components/effects/CustomCursor";
 import { AmbientBackground } from "@/components/effects/AmbientBackground";
+import { CrediAIChat } from "@/components/chat/CrediAIChat";
 import Landing from "./pages/Landing";
 import ModeSelection from "./pages/ModeSelection";
 import TeachingDashboard from "./pages/TeachingDashboard";
@@ -45,6 +46,8 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              {/* Credi.AI Chatbot - Available on all pages */}
+              <CrediAIChat />
             </BrowserRouter>
           </TooltipProvider>
         </ModeProvider>
