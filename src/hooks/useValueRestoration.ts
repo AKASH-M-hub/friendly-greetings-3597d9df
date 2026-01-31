@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+
 import {
   ValueRestoration,
   TimelineEvent,
@@ -38,28 +39,7 @@ export function useValueRestoration() {
     }
 
     try {
-      if (user.id === 'mock-user-id') {
-        const result: ValueRestoration = {
-          userId: user.id,
-          period,
-          hoursTeaching: 12.5,
-          hoursLearning: 8.0,
-          sessionsCompleted: 15,
-          creditsEarned: 50,
-          creditsUtilized: 32,
-          teachingVU: 125.0,
-          learningVU: 40.0,
-          sessionVU: 75.0,
-          utilizationVU: 16.0,
-          totalVU: 256.0,
-          peopleHelped: 8,
-          peopleLearnedFrom: 3,
-          skillsActivated: ['React', 'TypeScript', 'Piano', 'Design'],
-          calculatedAt: new Date().toISOString(),
-        };
-        setRestoration(result);
-        return result;
-      }
+
 
       // Fetch teaching sessions (using 'title' column for skill)
       const { data: teachingSessions } = await supabase
@@ -146,28 +126,7 @@ export function useValueRestoration() {
     if (!user) return [];
 
     try {
-      if (user.id === 'mock-user-id') {
-        const mockEvents: TimelineEvent[] = [
-          {
-            id: 'mock-evt-1',
-            type: 'teaching',
-            timestamp: new Date().toISOString(),
-            description: 'Taught React Basics for 60 minutes',
-            valueUnits: 15.5,
-            skillInvolved: 'React',
-          },
-          {
-            id: 'mock-evt-2',
-            type: 'learning',
-            timestamp: new Date(Date.now() - 86400000).toISOString(),
-            description: 'Learned Piano for 45 minutes',
-            valueUnits: 5.0,
-            skillInvolved: 'Piano',
-          }
-        ];
-        setTimeline(mockEvents);
-        return mockEvents;
-      }
+
 
       const { data: sessions } = await supabase
         .from('teaching_sessions')
@@ -209,15 +168,7 @@ export function useValueRestoration() {
     if (!user) return [];
 
     try {
-      if (user.id === 'mock-user-id') {
-        const mockSkills: SkillActivation[] = [
-          { skill: 'React', timesUsed: 5, totalVUGenerated: 45.5, isActive: true, lastUsed: new Date().toISOString() },
-          { skill: 'TypeScript', timesUsed: 3, totalVUGenerated: 25.0, isActive: true, lastUsed: new Date().toISOString() },
-          { skill: 'Design', timesUsed: 2, totalVUGenerated: 15.0, isActive: false, lastUsed: new Date(Date.now() - 100 * 86400000).toISOString() },
-        ];
-        setSkills(mockSkills);
-        return mockSkills;
-      }
+
 
       const { data: sessions } = await supabase
         .from('teaching_sessions')

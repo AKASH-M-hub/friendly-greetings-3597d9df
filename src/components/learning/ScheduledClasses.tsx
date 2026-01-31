@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, User, Video, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, User, Video, CheckCircle, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ interface ScheduledSession {
   seminar_id: string;
   status: string;
   scheduled_date: string | null;
+  meeting_link?: string;
   seminars?: {
     title: string;
     duration: string;
@@ -39,29 +40,58 @@ export function ScheduledClasses() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: requests, error } = await supabase
         .from('session_requests')
-        .select(`
-          id,
-          seminar_id,
-          status,
-          scheduled_date,
-          seminars (
-            title,
-            duration,
-            category
-          ),
-          profiles!session_requests_teacher_id_fkey (
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('learner_id', user.id)
         .eq('status', 'accepted')
-        .order('scheduled_date', { ascending: true });
+        .order('scheduled_at', { ascending: true });
 
       if (error) throw error;
-      setSessions((data as unknown as ScheduledSession[]) || []);
+
+      if (!requests || requests.length === 0) {
+        setSessions([]);
+        return;
+      }
+
+      // Manually fetch related data since FKs are missing
+      const sessionIds = requests.map(r => r.session_id).filter(Boolean);
+      const teacherIds = requests.map(r => r.teacher_id);
+
+      const [sessionsDesc, profilesDesc, roomsDesc] = await Promise.all([
+        supabase.from('teaching_sessions').select('*').in('id', sessionIds),
+        supabase.from('profiles').select('id, display_name, avatar_url').in('id', teacherIds),
+        supabase.from('session_rooms').select('session_id, room_code').in('session_id', sessionIds)
+      ]);
+
+      const sessionMap = new Map(sessionsDesc.data?.map(s => [s.id, s]));
+      const profileMap = new Map(profilesDesc.data?.map(p => [p.id, p]));
+      const roomMap = new Map(roomsDesc.data?.map(r => [r.session_id, r]));
+
+      const mappedSessions: ScheduledSession[] = requests.map(req => {
+        const sessionData = sessionMap.get(req.session_id);
+        const profileData = profileMap.get(req.teacher_id);
+        const roomData = roomMap.get(req.session_id);
+
+        return {
+          id: req.id,
+          seminar_id: req.session_id || '', // fallback
+          status: req.status,
+          scheduled_date: req.scheduled_at,
+          meeting_link: roomData?.room_code,
+          seminars: {
+            title: sessionData?.title || 'Unknown Session',
+            duration: '1h', // Default
+            category: 'General' // Default
+          },
+          profiles: {
+            display_name: profileData?.display_name || 'Teacher',
+            avatar_url: profileData?.avatar_url || null
+          }
+        };
+      });
+
+      setSessions(mappedSessions);
     } catch (error) {
       console.error('Error fetching scheduled sessions:', error);
     } finally {
@@ -72,9 +102,9 @@ export function ScheduledClasses() {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'To be scheduled';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -165,8 +195,8 @@ export function ScheduledClasses() {
                   <div className="flex items-center gap-2">
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
                       {session.profiles?.avatar_url ? (
-                        <img 
-                          src={session.profiles.avatar_url} 
+                        <img
+                          src={session.profiles.avatar_url}
                           alt=""
                           className="h-7 w-7 rounded-full object-cover"
                         />
@@ -178,10 +208,22 @@ export function ScheduledClasses() {
                       {session.profiles?.display_name || 'Teacher'}
                     </span>
                   </div>
-                  <Button size="sm" variant="outline" className="gap-1.5">
-                    <Video className="h-3.5 w-3.5" />
-                    Join
-                  </Button>
+
+                  {session.meeting_link ? (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-500/20"
+                      onClick={() => window.open(session.meeting_link, '_blank')}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Join Google Meet
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic px-2">
+                      Waiting for link...
+                    </span>
+                  )}
                 </div>
               </motion.div>
             ))}

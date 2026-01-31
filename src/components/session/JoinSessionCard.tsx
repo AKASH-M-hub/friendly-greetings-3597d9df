@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Users, 
-  Clock, 
-  Sparkles, 
+import {
+  Users,
+  Clock,
+  Sparkles,
   ArrowRight,
   Video,
   Loader2
@@ -89,10 +89,10 @@ export function JoinSessionCard({ onJoinSession }: JoinSessionCardProps) {
       const teacherIds = rooms?.map(r => r.teacher_id) || [];
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, display_name')
-        .in('user_id', teacherIds);
+        .select('id, display_name')
+        .in('id', teacherIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.id, p.display_name]) || []);
 
       const sessionsWithTeachers = (rooms || []).map(room => ({
         ...room,

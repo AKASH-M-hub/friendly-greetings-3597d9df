@@ -2,12 +2,14 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, displayName: string) => Promise<{ data: any; error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -27,18 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session);
           setUser(session.user);
         } else {
-          // Auto-login as mock user if no session
-          const mockUser = {
-            id: 'mock-user-id',
-            app_metadata: {},
-            user_metadata: {},
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-            email: 'demo@example.com',
-          } as User;
-          setUser(mockUser);
-          // We don't set a session for the mock user to avoid confusing Supabase client, 
-          // but the app checks 'user' object mostly. 
+          setSession(null);
+          setUser(null);
         }
         setLoading(false);
       }
@@ -50,16 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session.user);
       } else {
-        // Auto-login as mock user
-        const mockUser = {
-          id: 'mock-user-id',
-          app_metadata: {},
-          user_metadata: {},
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-          email: 'demo@example.com',
-        } as User;
-        setUser(mockUser);
+        setSession(null);
+        setUser(null);
       }
       setLoading(false);
     });
@@ -89,6 +73,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null };
   };
 
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/mode`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+    return { error: error as Error | null };
+  };
+
   const resendConfirmation = async (email: string) => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -105,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, resendConfirmation, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, resendConfirmation, signOut }}>
       {children}
     </AuthContext.Provider>
   );

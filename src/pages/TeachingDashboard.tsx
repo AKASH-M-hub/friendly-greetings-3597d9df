@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb, BookOpen, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb, BookOpen, Trash2, Video } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,7 +52,7 @@ export default function TeachingDashboard() {
   const { unlockMode } = useMode();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  
+
   const [showExpertiseForm, setShowExpertiseForm] = useState(false);
   const [showSeminarForm, setShowSeminarForm] = useState(false);
   const [expertise, setExpertise] = useState<Expertise | null>(null);
@@ -80,25 +80,57 @@ export default function TeachingDashboard() {
 
   const fetchSeminars = async () => {
     if (!user) return;
-    // Seminars table not yet created - use empty array
-    setSeminars([]);
+
+    // Fetch scheduled sessions to display as "My Seminars"
+    const { data } = await supabase
+      .from('teaching_sessions')
+      .select('id, title, status, duration, category, skill_level')
+      .eq('teacher_id', user.id)
+      .eq('status', 'scheduled') // Only showing scheduled/open ones
+      .order('created_at', { ascending: false });
+
+    const mapped: Seminar[] = (data || []).map((s: any) => ({
+      id: s.id,
+      title: s.title || 'Untitled',
+      category: s.category || 'General',
+      skill_level: s.skill_level || 'All Levels',
+      duration: s.duration || '1h',
+      is_active: true
+    }));
+
+    setSeminars(mapped);
   };
 
   const deleteSeminar = async (id: string) => {
+    // Optimistic update
     setSeminars(prev => prev.filter(s => s.id !== id));
-    toast.success('Seminar deleted');
+
+    try {
+      const { error } = await supabase
+        .from('teaching_sessions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Seminar deleted');
+    } catch (error) {
+      console.error('Error deleting seminar:', error);
+      toast.error('Failed to delete seminar');
+      // Revert optimistic update
+      fetchSeminars();
+    }
   };
 
   const fetchExpertise = async () => {
     if (!user) return;
-    
+
     const { data } = await supabase
       .from('teacher_expertise')
       .select('id, expertise_text, domain_tag')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .maybeSingle();
-    
+
     if (data) {
       setExpertise(data as Expertise);
     }
@@ -106,7 +138,7 @@ export default function TeachingDashboard() {
 
   const fetchUpcomingSessions = async () => {
     if (!user) return;
-    
+
     const { data } = await supabase
       .from('teaching_sessions')
       .select('id, title, created_at, status')
@@ -114,43 +146,43 @@ export default function TeachingDashboard() {
       .in('status', ['pending', 'scheduled'])
       .order('created_at', { ascending: true })
       .limit(5);
-    
+
     setUpcomingSessions(data || []);
   };
 
   const fetchRecentFeedback = async () => {
     if (!user) return;
-    
+
     const { data } = await supabase
       .from('teaching_reviews')
       .select('id, experience_rating, feedback, created_at')
       .eq('teacher_id', user.id)
       .order('created_at', { ascending: false })
       .limit(4);
-    
+
     setRecentFeedback(data || []);
   };
 
   const checkPendingReviews = async () => {
     if (!user) return;
-    
+
     // Find completed sessions without reviews
     const { data: sessions } = await supabase
       .from('teaching_sessions')
       .select('id')
       .eq('teacher_id', user.id)
       .eq('status', 'completed');
-    
+
     if (!sessions?.length) return;
-    
+
     const { data: reviews } = await supabase
       .from('teaching_reviews')
       .select('session_id')
       .eq('teacher_id', user.id);
-    
+
     const reviewedSessionIds = new Set(reviews?.map(r => r.session_id) || []);
     const pendingSession = sessions.find(s => !reviewedSessionIds.has(s.id));
-    
+
     if (pendingSession) {
       setPendingReviewSessionId(pendingSession.id);
       setShowReviewPrompt(true);
@@ -213,14 +245,14 @@ export default function TeachingDashboard() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button 
-              variant="chrono-outline" 
+            <Button
+              variant="chrono-outline"
               onClick={() => unlockMode()}
             >
               Switch Mode
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="gap-2"
               onClick={() => setShowExpertiseForm(true)}
             >
@@ -236,8 +268,8 @@ export default function TeachingDashboard() {
                 </>
               )}
             </Button>
-            <Button 
-              variant="chrono" 
+            <Button
+              variant="chrono"
               className="gap-2"
               onClick={() => setShowSeminarForm(true)}
             >
@@ -248,21 +280,21 @@ export default function TeachingDashboard() {
         </div>
 
         {/* My Seminars */}
-        {seminars.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-muted-foreground" />
-                  My Seminars
-                  <Badge variant="secondary" className="ml-auto">{seminars.length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-muted-foreground" />
+                My Seminars
+                <Badge variant="secondary" className="ml-auto">{seminars.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {seminars.length > 0 ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {seminars.map((seminar) => (
                     <div
@@ -280,18 +312,38 @@ export default function TeachingDashboard() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 mb-3">
                         <Badge variant="outline" className="text-xs">{seminar.category}</Badge>
                         <Badge variant="outline" className="text-xs">{seminar.skill_level}</Badge>
                         <Badge variant="outline" className="text-xs">{seminar.duration}</Badge>
                       </div>
+
+                      <Button
+                        className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                        onClick={() => navigate(`/meeting/${seminar.id}`)}
+                      >
+                        <Video className="h-4 w-4" />
+                        Start Class
+                      </Button>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <BookOpen className="mb-3 h-10 w-10 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">No active seminars yet.</p>
+                  <Button
+                    variant="link"
+                    onClick={() => setShowSeminarForm(true)}
+                    className="mt-2 text-primary"
+                  >
+                    Create your first seminar
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Expertise Display */}
         {expertise && (
@@ -371,10 +423,18 @@ export default function TeachingDashboard() {
                           {session.status}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-2">
                         <p className="text-xs text-muted-foreground">
                           {new Date(session.created_at).toLocaleDateString()}
                         </p>
+                        <Button
+                          size="sm"
+                          className="h-8 gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                          onClick={() => navigate(`/meeting/${session.id}`)}
+                        >
+                          <Video className="h-3 w-3" />
+                          Start Class
+                        </Button>
                       </div>
                     </div>
                   ))

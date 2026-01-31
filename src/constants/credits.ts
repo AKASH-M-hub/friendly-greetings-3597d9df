@@ -10,9 +10,9 @@
  */
 export const CREDIT_RATES = {
   // Per minute rates
-  TEACHER_CREDITS_PER_MINUTE: 2,
+  TEACHER_CREDITS_PER_MINUTE: 1,
   LEARNER_CREDITS_PER_MINUTE: 1,
-  
+
   // Starting credits for new users
   INITIAL_FREE_CREDITS: 10,
 } as const;
@@ -40,7 +40,7 @@ export function calculateLearnerCredits(minutes: number): number {
  */
 export function getCreditRateText(role: 'teacher' | 'learner'): string {
   if (role === 'teacher') {
-    return `+${CREDIT_RATES.TEACHER_CREDITS_PER_MINUTE} credits per minute`;
+    return `+${CREDIT_RATES.TEACHER_CREDITS_PER_MINUTE} credit per minute`;
   }
   return `-${CREDIT_RATES.LEARNER_CREDITS_PER_MINUTE} credit per minute`;
 }

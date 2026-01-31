@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Clock, 
-  ArrowRight, 
-  Sparkles, 
-  Users, 
-  Zap, 
-  Shield, 
-  BookOpen, 
+import {
+  Clock,
+  ArrowRight,
+  Sparkles,
+  Users,
+  Zap,
+  Shield,
+  BookOpen,
   GraduationCap,
   Star,
   ChevronRight
@@ -19,6 +19,7 @@ import { ThemeDropdown } from '@/components/ui/ThemeDropdown';
 import { ReviewSection } from '@/components/reviews/ReviewSection';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { useLandingStats } from '@/hooks/useLandingStats';
 
 const features = [
   {
@@ -43,20 +44,21 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: '10K+', label: 'Active Users' },
-  { value: '50K+', label: 'Sessions Completed' },
-  { value: '500+', label: 'Skills Available' },
-  { value: '4.9', label: 'Average Rating' },
-];
-
 function LandingContent() {
   const navigate = useNavigate();
+  const { stats: realData, loading } = useLandingStats();
+
+  const stats = [
+    { value: loading ? '...' : `${realData.activeUsers}+`, label: 'Active Users' },
+    { value: loading ? '...' : `${realData.sessionsCompleted}+`, label: 'Sessions Completed' },
+    { value: loading ? '...' : `${realData.skillsAvailable}+`, label: 'Skills Available' },
+    { value: loading ? '...' : realData.averageRating, label: 'Average Rating' },
+  ];
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <AmbientBackground />
-      
+
       {/* Navbar */}
       <header className="navbar-glass fixed left-0 right-0 top-0 z-50">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
@@ -68,19 +70,18 @@ function LandingContent() {
               Chrono
             </span>
           </div>
-          
+
           <div className="flex items-center gap-4">
             {/* Theme Dropdown */}
             <ThemeDropdown />
-            
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => navigate('/auth')}
               className="text-muted-foreground hover:text-foreground"
             >
               Sign In
             </Button>
-            <Button 
+            <Button
               onClick={() => navigate('/mode')}
               className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
@@ -123,7 +124,7 @@ function LandingContent() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground md:text-xl"
           >
-            Join a community where time becomes value. Teach what you know, 
+            Join a community where time becomes value. Teach what you know,
             learn what you love, and watch your credits grow.
           </motion.p>
 
@@ -139,17 +140,7 @@ function LandingContent() {
               className="group gap-3 bg-primary px-8 py-6 text-lg text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:shadow-xl"
             >
               <GraduationCap className="h-5 w-5" />
-              Start Teaching
-              <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => navigate('/mode')}
-              className="group gap-3 border-2 px-8 py-6 text-lg transition-all hover:bg-muted"
-            >
-              <BookOpen className="h-5 w-5" />
-              Start Learning
+              𝒢𝑒𝓉 𝒮𝓉𝒶𝓇𝓉𝑒𝒹
               <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Button>
           </motion.div>
@@ -186,6 +177,8 @@ function LandingContent() {
           </motion.div>
         </div>
       </section>
+
+
 
       {/* Features Section */}
       <section className="relative py-24">
@@ -247,7 +240,7 @@ function LandingContent() {
               ))}
             </div>
             <blockquote className="mb-6 font-display text-xl text-foreground md:text-2xl">
-              "Chrono transformed how I share my expertise. I've taught 50+ sessions 
+              "Chrono transformed how I share my expertise. I've taught 50+ sessions
               and learned skills I never thought I'd master. The credit system is genius!"
             </blockquote>
             <div className="flex items-center justify-center gap-4">
@@ -299,12 +292,12 @@ function LandingContent() {
               <span className="font-display font-semibold text-foreground">Chrono</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2024 Chrono. Time is value.
+              Build for IDE-A-THON @2026
             </p>
           </div>
         </div>
       </footer>
-    </div>
+    </div >
   );
 }
 

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  BookOpen, 
+import {
+  BookOpen,
   Sparkles,
   GraduationCap,
   Search,
   Filter,
-  Brain
+
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -17,11 +17,11 @@ import { useMode } from '@/contexts/ModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { SeminarCard, Seminar } from '@/components/learning/SeminarCard';
 import { ScheduledClasses } from '@/components/learning/ScheduledClasses';
-import { RepeatSuggestions, SessionDefaultsCard } from '@/components/chrono';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useSessionMemory } from '@/hooks/useSessionMemory';
+
 
 const categories = ['All', 'Technology', 'Design', 'Business', 'Languages', 'Music', 'Fitness'];
 
@@ -29,14 +29,14 @@ export default function LearningDashboard() {
   const { unlockMode } = useMode();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { suggestions, defaults, loading: memoryLoading } = useSessionMemory();
-  
+
+
   const [seminars, setSeminars] = useState<Seminar[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [requestingId, setRequestingId] = useState<string | null>(null);
-  const [showMemorySection, setShowMemorySection] = useState(false);
+
 
   useEffect(() => {
     fetchSeminars();
@@ -44,10 +44,80 @@ export default function LearningDashboard() {
 
   const fetchSeminars = async () => {
     try {
-      // Seminars table not yet created - use empty array
-      setSeminars([]);
+      // 1. Fetch available teaching sessions
+      const { data: sessions, error: sessionError } = await supabase
+        .from('teaching_sessions')
+        .select('*')
+        .eq('status', 'scheduled')
+        .is('learner_id', null)
+        .order('created_at', { ascending: false });
+
+      if (sessionError) throw sessionError;
+
+      if (!sessions || sessions.length === 0) {
+        setSeminars([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch teacher profiles manually
+      const teacherIds = Array.from(new Set(sessions.map((s: any) => s.teacher_id)));
+
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url')
+        .in('id', teacherIds);
+
+      if (profileError) throw profileError;
+
+      // Create a map of profiles
+      const profileMap = new Map();
+      profiles?.forEach((p: any) => profileMap.set(p.id, p));
+
+      // 3. Map to Seminar type
+      const mappedSeminars: Seminar[] = sessions.map((session: any) => {
+        const teacher = profileMap.get(session.teacher_id);
+        return {
+          id: session.id,
+          title: session.title || 'Untitled Seminar',
+          description: 'Join this session to learn live!',
+          teacher_id: session.teacher_id,
+          teacher_name: teacher?.display_name || 'Unknown Teacher',
+          teacher_avatar: teacher?.avatar_url,
+          category: 'General',
+          skill_level: 'All Levels',
+          duration: '1h',
+          max_learners: 1,
+          current_learners: 0,
+          start_time: new Date(session.created_at).toLocaleDateString(),
+          is_active: true,
+          has_requested: false,
+          prerequisites: null,
+          created_at: session.created_at
+        };
+      });
+
+      // 4. Check requests
+      if (user && mappedSeminars.length > 0) {
+        const { data: requests } = await supabase
+          .from('session_requests')
+          .select('session_id')
+          .eq('learner_id', user.id)
+          .in('session_id', mappedSeminars.map(s => s.id));
+
+        const requestedSet = new Set(requests?.map(r => r.session_id));
+
+        setSeminars(mappedSeminars.map(s => ({
+          ...s,
+          has_requested: requestedSet.has(s.id)
+        })));
+      } else {
+        setSeminars(mappedSeminars);
+      }
+
     } catch (error) {
       console.error('Error fetching seminars:', error);
+      toast.error('Failed to load seminars');
     } finally {
       setLoading(false);
     }
@@ -68,7 +138,8 @@ export default function LearningDashboard() {
       const { error } = await supabase
         .from('session_requests')
         .insert({
-          seminar_id: seminarId,
+          // We use session_id to link to the teaching_session
+          session_id: seminarId,
           learner_id: user.id,
           teacher_id: seminar.teacher_id,
           status: 'pending'
@@ -86,9 +157,9 @@ export default function LearningDashboard() {
       toast.success('Request sent!', {
         description: `Your request to join "${seminar.title}" has been sent to the teacher.`
       });
-      
+
       // Update local state
-      setSeminars(prev => prev.map(s => 
+      setSeminars(prev => prev.map(s =>
         s.id === seminarId ? { ...s, has_requested: true } : s
       ));
     } catch (error: unknown) {
@@ -101,14 +172,14 @@ export default function LearningDashboard() {
 
   // Filter seminars
   const filteredSeminars = seminars.filter(seminar => {
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = searchQuery === '' ||
       seminar.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       seminar.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       seminar.teacher_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = selectedCategory === 'All' || 
+
+    const matchesCategory = selectedCategory === 'All' ||
       seminar.category.toLowerCase() === selectedCategory.toLowerCase();
-    
+
     return matchesSearch && matchesCategory;
   });
 
@@ -141,7 +212,7 @@ export default function LearningDashboard() {
               className="pl-10"
             />
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <Button
@@ -168,7 +239,7 @@ export default function LearningDashboard() {
                 {filteredSeminars.length} seminars
               </Badge>
             </div>
-            
+
             {loading ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -185,7 +256,7 @@ export default function LearningDashboard() {
                 <CardContent className="py-12 text-center">
                   <BookOpen className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
                   <p className="text-muted-foreground">
-                    {seminars.length === 0 
+                    {seminars.length === 0
                       ? "No seminars available yet. Check back later!"
                       : "No seminars match your search. Try different filters."}
                   </p>
@@ -207,52 +278,10 @@ export default function LearningDashboard() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Session Memory Toggle */}
-            {user && (suggestions.length > 0 || defaults) && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <Button
-                  variant={showMemorySection ? "default" : "outline"}
-                  onClick={() => setShowMemorySection(!showMemorySection)}
-                  className="w-full gap-2"
-                >
-                  <Brain className="h-4 w-4" />
-                  {showMemorySection ? 'Hide Smart Suggestions' : 'Show Smart Suggestions'}
-                </Button>
-              </motion.div>
-            )}
+
 
             {/* Session Memory Section */}
-            {showMemorySection && user && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-4"
-              >
-                <RepeatSuggestions 
-                  suggestions={suggestions} 
-                  loading={memoryLoading}
-                  onSelectUser={(userId) => {
-                    toast.info('Session request feature coming soon!');
-                  }}
-                />
-                <SessionDefaultsCard 
-                  defaults={defaults} 
-                  loading={memoryLoading}
-                  onApply={(d) => {
-                    if (d.suggestedSkill) {
-                      setSearchQuery(d.suggestedSkill);
-                    }
-                    toast.success('Defaults applied!', {
-                      description: `Searching for "${d.suggestedSkill}" sessions`
-                    });
-                  }}
-                />
-              </motion.div>
-            )}
+
 
             {/* Credits Reminder */}
             <motion.div

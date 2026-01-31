@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { calculateTeacherCredits, calculateLearnerCredits } from '@/constants/credits';
 
 export interface SessionRoom {
   id: string;
@@ -257,9 +258,9 @@ export function useWebRTCSession(): UseWebRTCSessionReturn {
       const durationSeconds = elapsedTime;
       const durationMinutes = Math.ceil(durationSeconds / 60);
       // Credit rules: Teaching = 2 credits/hour, Learning = 1 credit/hour
-      const creditsEarned = isTeacher 
-        ? Math.floor((durationMinutes / 60) * 2) 
-        : Math.floor(durationMinutes / 60);
+      const creditsEarned = isTeacher
+        ? calculateTeacherCredits(durationMinutes)
+        : calculateLearnerCredits(durationMinutes);
 
       const { error: updateError } = await supabase
         .from('session_rooms')

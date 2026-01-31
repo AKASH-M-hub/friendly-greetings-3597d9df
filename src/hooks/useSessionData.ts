@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
 import { calculateTeacherCredits, calculateLearnerCredits, CREDIT_RATES } from '@/constants/credits';
 
+
 export interface SessionData {
   id: string;
   title: string;
@@ -99,42 +100,7 @@ export function useSessionData() {
       return;
     }
 
-    if (user.id === 'mock-user-id') {
-      // Mock data for demo user - using new credit rates (1 min = 2 credits for teacher, 1 min = 1 credit for learner)
-      const mockSessions: SessionData[] = [
-        {
-          id: 'mock-1',
-          title: 'React Fundamentals',
-          type: 'teaching',
-          date: 'Today',
-          time: '10:00 AM',
-          duration: '30m',
-          durationMinutes: 30,
-          partnerId: 'mock-learner-1',
-          partnerName: 'Alice Learner',
-          creditsChange: calculateTeacherCredits(30), // 30 min × 2 = 60 credits
-          status: 'completed',
-          rating: 5,
-        },
-        {
-          id: 'mock-2',
-          title: 'Advanced Guitar',
-          type: 'learning',
-          date: 'Yesterday',
-          time: '2:00 PM',
-          duration: '45m',
-          durationMinutes: 45,
-          partnerId: 'mock-teacher-1',
-          partnerName: 'Bob Teacher',
-          creditsChange: -calculateLearnerCredits(45), // 45 min × 1 = -45 credits
-          status: 'completed',
-          rating: 5,
-        }
-      ];
-      setSessions(mockSessions);
-      setLoading(false);
-      return;
-    }
+
 
     setLoading(true);
     setError(null);
@@ -199,10 +165,10 @@ export function useSessionData() {
 
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, display_name')
-        .in('user_id', Array.from(partnerIds));
+        .select('id, display_name')
+        .in('id', Array.from(partnerIds));
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name || 'Anonymous']) || []);
+      const profileMap = new Map(profiles?.map(p => [p.id, p.display_name || 'Anonymous']) || []);
 
       // Combine and transform sessions
       const allSessions: SessionData[] = [
@@ -299,93 +265,7 @@ export function useCreditData() {
       return;
     }
 
-    if (user.id === 'mock-user-id') {
-      // Mock wallet stats - includes 10 free starting credits
-      // User earned 180 (30min teaching × 2 × 3 sessions) + 10 initial = 190
-      // User spent 90 (90min learning × 1)
-      setWalletStats({
-        totalBalance: CREDIT_RATES.INITIAL_FREE_CREDITS + 180 - 90, // 10 + 180 - 90 = 100
-        totalEarned: 180,
-        totalSpent: 90,
-        heldCredits: 15,
-        earnedThisWeek: 60, // 30min × 2 credits
-        spentThisWeek: 45, // 45min × 1 credit
-      });
 
-      // Mock transactions - using new credit rates (1 min = 2 for teacher, 1 min = 1 for learner)
-      setTransactions([
-        {
-          id: 'mock-tx-1',
-          type: 'earned',
-          amount: calculateTeacherCredits(30), // 30 min × 2 = 60 credits
-          description: 'Web Development Basics',
-          partnerName: 'Sarah Smith',
-          date: 'Today',
-          time: '2:30 PM',
-          sessionDuration: '30m',
-          status: 'completed',
-        },
-        {
-          id: 'mock-tx-2',
-          type: 'spent',
-          amount: calculateLearnerCredits(45), // 45 min × 1 = 45 credits
-          description: 'Piano Lessons',
-          partnerName: 'John Doe',
-          date: 'Yesterday',
-          time: '11:00 AM',
-          sessionDuration: '45m',
-          status: 'completed',
-        },
-        {
-          id: 'mock-tx-3',
-          type: 'held',
-          amount: 15,
-          description: 'Pending Verification',
-          partnerName: 'System',
-          date: 'Yesterday',
-          time: '5:00 PM',
-          sessionDuration: '-',
-          status: 'pending',
-        }
-      ]);
-
-      // Mock session log - using new credit rates
-      setSessionLog([
-        {
-          id: 'mock-log-1',
-          sessionId: 'sess-1',
-          role: 'teacher',
-          partnerName: 'Alice Learner',
-          topic: 'React Fundamentals',
-          date: 'Today',
-          time: '10:00 AM',
-          duration: '30m',
-          durationMinutes: 30,
-          creditsEarned: calculateTeacherCredits(30), // 30 × 2 = 60
-          status: 'completed',
-          confirmedByTeacher: true,
-          confirmedByLearner: true,
-        },
-        {
-          id: 'mock-log-2',
-          sessionId: 'sess-2',
-          role: 'learner',
-          partnerName: 'Bob Teacher',
-          topic: 'Advanced Guitar',
-          date: 'Yesterday',
-          time: '2:00 PM',
-          duration: '45m',
-          durationMinutes: 45,
-          creditsSpent: calculateLearnerCredits(45), // 45 × 1 = 45
-          status: 'completed',
-          confirmedByTeacher: true,
-          confirmedByLearner: true,
-        }
-      ]);
-
-      setLoading(false);
-      return;
-    }
 
     setLoading(true);
     setError(null);
@@ -420,10 +300,10 @@ export function useCreditData() {
 
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, display_name')
-        .in('user_id', Array.from(partnerIds) as string[]);
+        .select('id, display_name')
+        .in('id', Array.from(partnerIds) as string[]);
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name || 'Anonymous']) || []);
+      const profileMap = new Map(profiles?.map(p => [p.id, p.display_name || 'Anonymous']) || []);
 
       // Calculate wallet stats using new credit rates (1 min = 2 credits for teacher, 1 min = 1 credit for learner)
       const completedTeaching = teachingSessions?.filter(s => s.status === 'completed') || [];

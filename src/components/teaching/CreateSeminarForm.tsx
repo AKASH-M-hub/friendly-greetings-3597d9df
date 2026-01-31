@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Plus, 
-  X, 
+import {
+  Plus,
+  X,
   Loader2,
   BookOpen,
   Clock,
@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const categories = ['Technology', 'Design', 'Business', 'Languages', 'Music', 'Fitness', 'Science', 'Other'];
@@ -42,7 +43,7 @@ export function CreateSeminarForm({ onComplete, onCancel }: CreateSeminarFormPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast.error('Please sign in to create a seminar');
       return;
@@ -55,19 +56,33 @@ export function CreateSeminarForm({ onComplete, onCancel }: CreateSeminarFormPro
 
     setSaving(true);
     try {
-      // In production, this would insert into database
-      // For now, just show success and complete
+      // Map seminar to teaching_session
+      // Note: We are using teaching_sessions table which currently has limited fields
+      // Description, category, etc. are not persisted in the current schema
+      const { error } = await supabase
+        .from('teaching_sessions')
+        .insert({
+          title: formData.title,
+          teacher_id: user.id,
+          status: 'scheduled',
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
       toast.success('Seminar created!', {
         description: 'Your seminar is now visible to learners.'
       });
       onComplete();
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error creating seminar:', error);
-      toast.error('Failed to create seminar');
+      toast.error('Failed to create seminar: ' + error.message);
     } finally {
       setSaving(false);
     }
   };
+
+  if (!user) return null;
 
   return (
     <motion.div
