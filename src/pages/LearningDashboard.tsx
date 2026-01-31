@@ -5,7 +5,8 @@ import {
   Sparkles,
   GraduationCap,
   Search,
-  Filter
+  Filter,
+  Brain
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -16,9 +17,11 @@ import { useMode } from '@/contexts/ModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { SeminarCard, Seminar } from '@/components/learning/SeminarCard';
 import { ScheduledClasses } from '@/components/learning/ScheduledClasses';
+import { RepeatSuggestions, SessionDefaultsCard } from '@/components/chrono';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useSessionMemory } from '@/hooks/useSessionMemory';
 
 const categories = ['All', 'Technology', 'Design', 'Business', 'Languages', 'Music', 'Fitness'];
 
@@ -26,12 +29,14 @@ export default function LearningDashboard() {
   const { unlockMode } = useMode();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { suggestions, defaults, loading: memoryLoading } = useSessionMemory();
   
   const [seminars, setSeminars] = useState<Seminar[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [showMemorySection, setShowMemorySection] = useState(false);
 
   useEffect(() => {
     fetchSeminars();
@@ -251,6 +256,53 @@ export default function LearningDashboard() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Session Memory Toggle */}
+            {user && (suggestions.length > 0 || defaults) && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Button
+                  variant={showMemorySection ? "default" : "outline"}
+                  onClick={() => setShowMemorySection(!showMemorySection)}
+                  className="w-full gap-2"
+                >
+                  <Brain className="h-4 w-4" />
+                  {showMemorySection ? 'Hide Smart Suggestions' : 'Show Smart Suggestions'}
+                </Button>
+              </motion.div>
+            )}
+
+            {/* Session Memory Section */}
+            {showMemorySection && user && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4"
+              >
+                <RepeatSuggestions 
+                  suggestions={suggestions} 
+                  loading={memoryLoading}
+                  onSelectUser={(userId) => {
+                    toast.info('Session request feature coming soon!');
+                  }}
+                />
+                <SessionDefaultsCard 
+                  defaults={defaults} 
+                  loading={memoryLoading}
+                  onApply={(d) => {
+                    if (d.suggestedSkill) {
+                      setSearchQuery(d.suggestedSkill);
+                    }
+                    toast.success('Defaults applied!', {
+                      description: `Searching for "${d.suggestedSkill}" sessions`
+                    });
+                  }}
+                />
+              </motion.div>
+            )}
+
             {/* Credits Reminder */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -294,6 +346,10 @@ export default function LearningDashboard() {
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     Earn more credits by teaching what you know
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    The app remembers your best matches
                   </li>
                 </ul>
               </CardContent>
