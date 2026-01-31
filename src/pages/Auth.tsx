@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ToastAction } from '@/components/ui/toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
@@ -30,9 +31,25 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, resendConfirmation } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const handleResend = async (email: string) => {
+    const { error } = await resendConfirmation(email);
+    if (error) {
+      toast({
+        title: 'Failed to resend',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Email resent',
+        description: 'Check your inbox again.',
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,17 +71,24 @@ export default function Auth() {
           return;
         }
 
-        const { error } = await signUp(email, password, displayName);
+        const { data, error } = await signUp(email, password, displayName);
         if (error) {
           toast({
             title: 'Sign up failed',
             description: error.message,
             variant: 'destructive',
           });
+        } else if (data.session) {
+          navigate('/mode');
         } else {
           toast({
             title: 'Check your email',
             description: 'We sent you a confirmation link to verify your account.',
+            action: (
+              <ToastAction altText="Resend confirmation email" onClick={() => handleResend(email)}>
+                Resend
+              </ToastAction>
+            ),
           });
         }
       } else {
