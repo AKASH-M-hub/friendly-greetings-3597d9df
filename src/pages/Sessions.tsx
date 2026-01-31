@@ -8,7 +8,8 @@ import {
   GraduationCap,
   BookOpen,
   Loader2,
-  Shield
+  Shield,
+  Zap
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +26,13 @@ import {
   CreditLedgerView,
   RecoverySystemDisplay
 } from '@/components/transaction';
+import {
+  TimeToValueConverter,
+  ValueRestorationTimeline,
+  SkillActivationIndicator,
+  MonthlyValueSummaryCard
+} from '@/components/chrono';
+import { useValueRestoration } from '@/hooks/useValueRestoration';
 
 type SessionType = 'all' | 'teaching' | 'learning';
 
@@ -33,9 +41,10 @@ export default function Sessions() {
   const { sessions, stats, loading, error } = useSessionData();
   const { user } = useAuth();
   const { currentMode } = useMode();
+  const { restoration, timeline, skills, monthlySummary, loading: chronoLoading } = useValueRestoration();
 
   // Default to current mode's tab if mode is set
-  const [activeTab, setActiveTab] = useState<'history' | 'timetable' | 'integrity'>('history');
+  const [activeTab, setActiveTab] = useState<'history' | 'timetable' | 'integrity' | 'chrono'>('history');
   const [timetableMode, setTimetableMode] = useState<'teaching' | 'learning'>(
     currentMode || 'teaching'
   );
@@ -156,7 +165,7 @@ export default function Sessions() {
         </div>
 
         {/* Tabs for History, Timetable, and Transaction Integrity */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'history' | 'timetable' | 'integrity')}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'history' | 'timetable' | 'integrity' | 'chrono')}>
           <TabsList className="mb-6">
             <TabsTrigger value="history" className="gap-2">
               <Clock className="h-4 w-4" />
@@ -169,6 +178,10 @@ export default function Sessions() {
             <TabsTrigger value="integrity" className="gap-2">
               <Shield className="h-4 w-4" />
               Transaction Integrity
+            </TabsTrigger>
+            <TabsTrigger value="chrono" className="gap-2">
+              <Zap className="h-4 w-4" />
+              Value Restoration
             </TabsTrigger>
           </TabsList>
 
@@ -330,6 +343,36 @@ export default function Sessions() {
               </div>
               <div>
                 <CreditLedgerView limit={30} showFilters={true} />
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Chrono Correction Layer Tab */}
+          <TabsContent value="chrono">
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+                  Chrono Correction Layer
+                </h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  See how your time creates real value. Every hour teaching, learning, and connecting 
+                  is converted into Value Units (VU) — a measure of your impact.
+                </p>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Left Column */}
+                <div className="space-y-6">
+                  <TimeToValueConverter restoration={restoration} loading={chronoLoading} />
+                  <SkillActivationIndicator skills={skills} loading={chronoLoading} />
+                </div>
+                
+                {/* Right Column */}
+                <div className="space-y-6">
+                  <MonthlyValueSummaryCard summary={monthlySummary} loading={chronoLoading} />
+                  <ValueRestorationTimeline events={timeline} loading={chronoLoading} />
+                </div>
               </div>
             </div>
           </TabsContent>
