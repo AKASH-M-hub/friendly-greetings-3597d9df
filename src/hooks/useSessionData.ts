@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
+import { calculateTeacherCredits, calculateLearnerCredits, CREDIT_RATES } from '@/constants/credits';
 
 export interface SessionData {
   id: string;
@@ -99,7 +100,7 @@ export function useSessionData() {
     }
 
     if (user.id === 'mock-user-id') {
-      // Mock data for demo user
+      // Mock data for demo user - using new credit rates (1 min = 2 credits for teacher, 1 min = 1 credit for learner)
       const mockSessions: SessionData[] = [
         {
           id: 'mock-1',
@@ -107,11 +108,11 @@ export function useSessionData() {
           type: 'teaching',
           date: 'Today',
           time: '10:00 AM',
-          duration: '1h',
-          durationMinutes: 60,
+          duration: '30m',
+          durationMinutes: 30,
           partnerId: 'mock-learner-1',
           partnerName: 'Alice Learner',
-          creditsChange: 2,
+          creditsChange: calculateTeacherCredits(30), // 30 min × 2 = 60 credits
           status: 'completed',
           rating: 5,
         },
@@ -125,7 +126,7 @@ export function useSessionData() {
           durationMinutes: 45,
           partnerId: 'mock-teacher-1',
           partnerName: 'Bob Teacher',
-          creditsChange: -1,
+          creditsChange: -calculateLearnerCredits(45), // 45 min × 1 = -45 credits
           status: 'completed',
           rating: 5,
         }
@@ -217,7 +218,7 @@ export function useSessionData() {
           partnerName: s.learner_id ? (profileMap.get(s.learner_id) || 'Learner') : 'No learner',
           rating: reviewMap.get(s.id)?.experience_rating,
           feedback: reviewMap.get(s.id)?.feedback || undefined,
-          creditsChange: s.credits_earned || 0,
+          creditsChange: s.credits_earned || calculateTeacherCredits(s.actual_minutes || 0),
           status: mapStatus(s.status),
         })) || []),
         ...(learningSessions?.map(s => ({
@@ -232,7 +233,7 @@ export function useSessionData() {
           partnerName: profileMap.get(s.teacher_id) || 'Teacher',
           rating: reviewMap.get(s.id)?.experience_rating,
           feedback: reviewMap.get(s.id)?.feedback || undefined,
-          creditsChange: -(Math.ceil((s.actual_minutes || 0) / 60)),
+          creditsChange: -calculateLearnerCredits(s.actual_minutes || 0),
           status: mapStatus(s.status),
         })) || []),
       ].sort((a, b) => {
@@ -299,44 +300,46 @@ export function useCreditData() {
     }
 
     if (user.id === 'mock-user-id') {
-      // Mock wallet stats
+      // Mock wallet stats - includes 10 free starting credits
+      // User earned 180 (30min teaching × 2 × 3 sessions) + 10 initial = 190
+      // User spent 90 (90min learning × 1)
       setWalletStats({
-        totalBalance: 125,
-        totalEarned: 350,
-        totalSpent: 225,
+        totalBalance: CREDIT_RATES.INITIAL_FREE_CREDITS + 180 - 90, // 10 + 180 - 90 = 100
+        totalEarned: 180,
+        totalSpent: 90,
         heldCredits: 15,
-        earnedThisWeek: 45,
-        spentThisWeek: 30,
+        earnedThisWeek: 60, // 30min × 2 credits
+        spentThisWeek: 45, // 45min × 1 credit
       });
 
-      // Mock transactions
+      // Mock transactions - using new credit rates (1 min = 2 for teacher, 1 min = 1 for learner)
       setTransactions([
         {
           id: 'mock-tx-1',
           type: 'earned',
-          amount: 15,
+          amount: calculateTeacherCredits(30), // 30 min × 2 = 60 credits
           description: 'Web Development Basics',
           partnerName: 'Sarah Smith',
           date: 'Today',
           time: '2:30 PM',
-          sessionDuration: '1h 30m',
+          sessionDuration: '30m',
           status: 'completed',
         },
         {
           id: 'mock-tx-2',
           type: 'spent',
-          amount: 10,
+          amount: calculateLearnerCredits(45), // 45 min × 1 = 45 credits
           description: 'Piano Lessons',
           partnerName: 'John Doe',
           date: 'Yesterday',
           time: '11:00 AM',
-          sessionDuration: '1h',
+          sessionDuration: '45m',
           status: 'completed',
         },
         {
           id: 'mock-tx-3',
           type: 'held',
-          amount: 5,
+          amount: 15,
           description: 'Pending Verification',
           partnerName: 'System',
           date: 'Yesterday',
@@ -346,7 +349,7 @@ export function useCreditData() {
         }
       ]);
 
-      // Mock session log
+      // Mock session log - using new credit rates
       setSessionLog([
         {
           id: 'mock-log-1',
@@ -356,9 +359,9 @@ export function useCreditData() {
           topic: 'React Fundamentals',
           date: 'Today',
           time: '10:00 AM',
-          duration: '1h',
-          durationMinutes: 60,
-          creditsEarned: 2,
+          duration: '30m',
+          durationMinutes: 30,
+          creditsEarned: calculateTeacherCredits(30), // 30 × 2 = 60
           status: 'completed',
           confirmedByTeacher: true,
           confirmedByLearner: true,
@@ -373,7 +376,7 @@ export function useCreditData() {
           time: '2:00 PM',
           duration: '45m',
           durationMinutes: 45,
-          creditsSpent: 1,
+          creditsSpent: calculateLearnerCredits(45), // 45 × 1 = 45
           status: 'completed',
           confirmedByTeacher: true,
           confirmedByLearner: true,
@@ -422,18 +425,20 @@ export function useCreditData() {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name || 'Anonymous']) || []);
 
-      // Calculate wallet stats
+      // Calculate wallet stats using new credit rates (1 min = 2 credits for teacher, 1 min = 1 credit for learner)
       const completedTeaching = teachingSessions?.filter(s => s.status === 'completed') || [];
       const completedLearning = learningSessions?.filter(s => s.status === 'completed') || [];
 
-      const totalEarned = completedTeaching.reduce((sum, s) => sum + (s.credits_earned || 0), 0);
-      const totalSpent = completedLearning.reduce((sum, s) => sum + Math.ceil((s.actual_minutes || 0) / 60), 0);
+      // Teacher earns: minutes × 2 credits
+      const totalEarned = completedTeaching.reduce((sum, s) => sum + (s.credits_earned || calculateTeacherCredits(s.actual_minutes || 0)), 0);
+      // Learner spends: minutes × 1 credit
+      const totalSpent = completedLearning.reduce((sum, s) => sum + calculateLearnerCredits(s.actual_minutes || 0), 0);
 
       const weekTeaching = completedTeaching.filter(s => new Date(s.created_at) >= weekAgo);
       const weekLearning = completedLearning.filter(s => new Date(s.created_at) >= weekAgo);
 
-      const earnedThisWeek = weekTeaching.reduce((sum, s) => sum + (s.credits_earned || 0), 0);
-      const spentThisWeek = weekLearning.reduce((sum, s) => sum + Math.ceil((s.actual_minutes || 0) / 60), 0);
+      const earnedThisWeek = weekTeaching.reduce((sum, s) => sum + (s.credits_earned || calculateTeacherCredits(s.actual_minutes || 0)), 0);
+      const spentThisWeek = weekLearning.reduce((sum, s) => sum + calculateLearnerCredits(s.actual_minutes || 0), 0);
 
       const pendingSessions = [
         ...(teachingSessions?.filter(s => s.status === 'pending') || []),
@@ -441,8 +446,9 @@ export function useCreditData() {
       ];
       const heldCredits = pendingSessions.reduce((sum, s) => sum + (s.credits_earned || 0), 0);
 
+      // Balance includes initial free credits for new users
       setWalletStats({
-        totalBalance: totalEarned - totalSpent,
+        totalBalance: CREDIT_RATES.INITIAL_FREE_CREDITS + totalEarned - totalSpent,
         totalEarned,
         totalSpent,
         heldCredits,
@@ -466,7 +472,7 @@ export function useCreditData() {
         ...(completedLearning.map(s => ({
           id: s.id,
           type: 'spent' as const,
-          amount: Math.ceil((s.actual_minutes || 0) / 60),
+          amount: calculateLearnerCredits(s.actual_minutes || 0),
           description: s.title || 'Learning Session',
           partnerName: profileMap.get(s.teacher_id) || 'Teacher',
           date: formatSessionDate(s.created_at),

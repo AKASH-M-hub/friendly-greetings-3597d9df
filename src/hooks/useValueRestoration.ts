@@ -95,9 +95,11 @@ export function useValueRestoration() {
         (sum, s) => sum + Math.ceil((s.actual_minutes || 0) / 15), 0
       );
 
-      // Calculate Value Units
-      const teachingVU = hoursTeaching * VALUE_UNIT_RATES.TEACHING_HOUR;
-      const learningVU = hoursLearning * VALUE_UNIT_RATES.LEARNING_HOUR;
+      // Calculate Value Units - now based on minutes (1 min = 2 VU for teaching, 1 min = 1 VU for learning)
+      const minutesTeaching = hoursTeaching * 60;
+      const minutesLearning = hoursLearning * 60;
+      const teachingVU = minutesTeaching * VALUE_UNIT_RATES.TEACHING_MINUTE;
+      const learningVU = minutesLearning * VALUE_UNIT_RATES.LEARNING_MINUTE;
       const sessionVU = sessionsCompleted * VALUE_UNIT_RATES.COMPLETED_SESSION;
       const utilizationVU = creditsUtilized * VALUE_UNIT_RATES.CREDIT_UTILIZED;
       const totalVU = teachingVU + learningVU + sessionVU + utilizationVU;
@@ -177,10 +179,11 @@ export function useValueRestoration() {
 
       const events: TimelineEvent[] = (sessions || []).map(session => {
         const isTeacher = session.teacher_id === user.id;
-        const hours = (session.actual_minutes || 0) / 60;
+        const minutes = session.actual_minutes || 0;
+        // Calculate VU based on minutes (1 min = 2 VU for teaching, 1 min = 1 VU for learning)
         const vu = isTeacher
-          ? hours * VALUE_UNIT_RATES.TEACHING_HOUR
-          : hours * VALUE_UNIT_RATES.LEARNING_HOUR;
+          ? minutes * VALUE_UNIT_RATES.TEACHING_MINUTE
+          : minutes * VALUE_UNIT_RATES.LEARNING_MINUTE;
 
         return {
           id: session.id,
@@ -229,10 +232,11 @@ export function useValueRestoration() {
         if (!skill) return;
 
         const isTeacher = session.teacher_id === user.id;
-        const hours = (session.actual_minutes || 0) / 60;
+        const minutes = session.actual_minutes || 0;
+        // Calculate VU based on minutes (1 min = 2 VU for teaching, 1 min = 1 VU for learning)
         const vu = isTeacher
-          ? hours * VALUE_UNIT_RATES.TEACHING_HOUR
-          : hours * VALUE_UNIT_RATES.LEARNING_HOUR;
+          ? minutes * VALUE_UNIT_RATES.TEACHING_MINUTE
+          : minutes * VALUE_UNIT_RATES.LEARNING_MINUTE;
 
         const existing = skillMap.get(skill);
         if (existing) {

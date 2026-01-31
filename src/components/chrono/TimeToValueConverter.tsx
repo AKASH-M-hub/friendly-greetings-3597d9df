@@ -65,7 +65,7 @@ export function TimeToValueConverter({ restoration, loading }: TimeToValueConver
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                Teaching ({restoration.hoursTeaching}h × {VALUE_UNIT_RATES.TEACHING_HOUR} VU)
+                Teaching ({restoration.hoursTeaching}h × {VALUE_UNIT_RATES.TEACHING_MINUTE * 60} VU/hr)
               </span>
               <span className="font-medium text-foreground">{restoration.teachingVU} VU</span>
             </div>
@@ -73,7 +73,7 @@ export function TimeToValueConverter({ restoration, loading }: TimeToValueConver
             
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                Learning ({restoration.hoursLearning}h × {VALUE_UNIT_RATES.LEARNING_HOUR} VU)
+                Learning ({restoration.hoursLearning}h × {VALUE_UNIT_RATES.LEARNING_MINUTE * 60} VU/hr)
               </span>
               <span className="font-medium text-foreground">{restoration.learningVU} VU</span>
             </div>
