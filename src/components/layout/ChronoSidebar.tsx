@@ -29,13 +29,37 @@ interface NavItem {
   badge?: string | number;
 }
 
-const mainNavItems: NavItem[] = [
-  { icon: Home, label: 'Mode Selection', href: '/' },
-  { icon: GraduationCap, label: 'Teaching', href: '/teaching' },
-  { icon: BookOpen, label: 'Learning', href: '/learning' },
-  { icon: Coins, label: 'Credits', href: '/credits' },
-  { icon: History, label: 'Sessions', href: '/sessions' },
-];
+// Dynamic nav items based on current mode
+const getMainNavItems = (mode: 'teaching' | 'learning' | null): NavItem[] => {
+  const baseItems: NavItem[] = [
+    { icon: Home, label: 'Mode Selection', href: '/mode' },
+  ];
+
+  if (mode === 'teaching') {
+    return [
+      ...baseItems,
+      { icon: GraduationCap, label: 'Teaching Dashboard', href: '/teaching' },
+      { icon: Coins, label: 'Credits', href: '/credits' },
+      { icon: History, label: 'Sessions', href: '/sessions' },
+    ];
+  } else if (mode === 'learning') {
+    return [
+      ...baseItems,
+      { icon: BookOpen, label: 'Learning Dashboard', href: '/learning' },
+      { icon: Coins, label: 'Credits', href: '/credits' },
+      { icon: History, label: 'Sessions', href: '/sessions' },
+    ];
+  }
+
+  // No mode selected - show both options
+  return [
+    ...baseItems,
+    { icon: GraduationCap, label: 'Teaching', href: '/teaching' },
+    { icon: BookOpen, label: 'Learning', href: '/learning' },
+    { icon: Coins, label: 'Credits', href: '/credits' },
+    { icon: History, label: 'Sessions', href: '/sessions' },
+  ];
+};
 
 const secondaryNavItems: NavItem[] = [
   { icon: MessageSquare, label: 'Chrono AI', href: '/chat' },
@@ -124,7 +148,7 @@ export function ChronoSidebar() {
           )}
         </div>
         
-        {mainNavItems.map((item) => {
+        {getMainNavItems(currentMode).map((item) => {
           const isActive = location.pathname === item.href;
           const Icon = item.icon;
           
