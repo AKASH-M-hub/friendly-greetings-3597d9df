@@ -14,410 +14,28 @@ export type Database = {
   }
   public: {
     Tables: {
-      chat_conversations: {
-        Row: {
-          context_mode: string | null
-          context_session_id: string | null
-          created_at: string | null
-          id: string
-          is_active: boolean | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          context_mode?: string | null
-          context_session_id?: string | null
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          context_mode?: string | null
-          context_session_id?: string | null
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      chat_messages: {
-        Row: {
-          content: string
-          conversation_id: string
-          created_at: string | null
-          id: string
-          metadata: Json | null
-          role: string
-        }
-        Insert: {
-          content: string
-          conversation_id: string
-          created_at?: string | null
-          id?: string
-          metadata?: Json | null
-          role: string
-        }
-        Update: {
-          content?: string
-          conversation_id?: string
-          created_at?: string | null
-          id?: string
-          metadata?: Json | null
-          role?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chat_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "chat_conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      compatibility_scores: {
-        Row: {
-          block_reason: string | null
-          created_at: string
-          energy_compatibility: number | null
-          id: string
-          intent_compatibility: number | null
-          is_blocked: boolean | null
-          overall_score: number | null
-          updated_at: string
-          user_a_id: string
-          user_b_id: string
-        }
-        Insert: {
-          block_reason?: string | null
-          created_at?: string
-          energy_compatibility?: number | null
-          id?: string
-          intent_compatibility?: number | null
-          is_blocked?: boolean | null
-          overall_score?: number | null
-          updated_at?: string
-          user_a_id: string
-          user_b_id: string
-        }
-        Update: {
-          block_reason?: string | null
-          created_at?: string
-          energy_compatibility?: number | null
-          id?: string
-          intent_compatibility?: number | null
-          is_blocked?: boolean | null
-          overall_score?: number | null
-          updated_at?: string
-          user_a_id?: string
-          user_b_id?: string
-        }
-        Relationships: []
-      }
-      decision_reliability: {
-        Row: {
-          created_at: string | null
-          decision_type: string
-          explanation: string | null
-          id: string
-          reliability_index: number
-          uncertainty_flagged: boolean | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          decision_type: string
-          explanation?: string | null
-          id?: string
-          reliability_index?: number
-          uncertainty_flagged?: boolean | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          decision_type?: string
-          explanation?: string | null
-          id?: string
-          reliability_index?: number
-          uncertainty_flagged?: boolean | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      exchange_events: {
-        Row: {
-          created_at: string | null
-          event_type: string
-          hours: number
-          id: string
-          partner_user_id: string | null
-          session_id: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          event_type: string
-          hours: number
-          id?: string
-          partner_user_id?: string | null
-          session_id?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          event_type?: string
-          hours?: number
-          id?: string
-          partner_user_id?: string | null
-          session_id?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      fairness_tracking: {
-        Row: {
-          cooldown_until: string | null
-          created_at: string | null
-          fairness_score: number | null
-          give_receive_ratio: number | null
-          id: string
-          last_nudge_at: string | null
-          one_sided_flags: number | null
-          total_given_hours: number | null
-          total_received_hours: number | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          cooldown_until?: string | null
-          created_at?: string | null
-          fairness_score?: number | null
-          give_receive_ratio?: number | null
-          id?: string
-          last_nudge_at?: string | null
-          one_sided_flags?: number | null
-          total_given_hours?: number | null
-          total_received_hours?: number | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          cooldown_until?: string | null
-          created_at?: string | null
-          fairness_score?: number | null
-          give_receive_ratio?: number | null
-          id?: string
-          last_nudge_at?: string | null
-          one_sided_flags?: number | null
-          total_given_hours?: number | null
-          total_received_hours?: number | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      historical_accuracy: {
-        Row: {
-          accuracy_score: number | null
-          actual_outcome: string | null
-          created_at: string | null
-          evaluated_at: string | null
-          id: string
-          prediction_made: string | null
-          recommendation_type: string
-          user_id: string
-        }
-        Insert: {
-          accuracy_score?: number | null
-          actual_outcome?: string | null
-          created_at?: string | null
-          evaluated_at?: string | null
-          id?: string
-          prediction_made?: string | null
-          recommendation_type: string
-          user_id: string
-        }
-        Update: {
-          accuracy_score?: number | null
-          actual_outcome?: string | null
-          created_at?: string | null
-          evaluated_at?: string | null
-          id?: string
-          prediction_made?: string | null
-          recommendation_type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      product_reviews: {
-        Row: {
-          created_at: string | null
-          id: string
-          rating: number
-          review_text: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          rating: number
-          review_text: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          rating?: number
-          review_text?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
-          created_at: string | null
-          display_name: string | null
-          id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      seminars: {
-        Row: {
-          category: string
-          created_at: string | null
-          description: string | null
-          duration: string | null
-          id: string
-          is_active: boolean | null
-          max_learners: number | null
-          prerequisites: string | null
-          skill_level: string | null
-          teacher_id: string
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          category: string
-          created_at?: string | null
-          description?: string | null
-          duration?: string | null
-          id?: string
-          is_active?: boolean | null
-          max_learners?: number | null
-          prerequisites?: string | null
-          skill_level?: string | null
-          teacher_id: string
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string
-          created_at?: string | null
-          description?: string | null
-          duration?: string | null
-          id?: string
-          is_active?: boolean | null
-          max_learners?: number | null
-          prerequisites?: string | null
-          skill_level?: string | null
-          teacher_id?: string
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      session_adjustments: {
-        Row: {
-          adjusted_by: string | null
-          adjusted_duration_minutes: number
-          adjustment_reason: string | null
           created_at: string
+          display_name: string
           id: string
-          original_duration_minutes: number
-          session_id: string | null
-        }
-        Insert: {
-          adjusted_by?: string | null
-          adjusted_duration_minutes: number
-          adjustment_reason?: string | null
-          created_at?: string
-          id?: string
-          original_duration_minutes: number
-          session_id?: string | null
-        }
-        Update: {
-          adjusted_by?: string | null
-          adjusted_duration_minutes?: number
-          adjustment_reason?: string | null
-          created_at?: string
-          id?: string
-          original_duration_minutes?: number
-          session_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_adjustments_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "teaching_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      session_intent: {
-        Row: {
-          created_at: string
-          energy_level: string
-          id: string
-          intent_type: string
-          is_active: boolean | null
-          preferred_duration_minutes: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
-          energy_level: string
+          display_name: string
           id?: string
-          intent_type: string
-          is_active?: boolean | null
-          preferred_duration_minutes?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
-          energy_level?: string
+          display_name?: string
           id?: string
-          intent_type?: string
-          is_active?: boolean | null
-          preferred_duration_minutes?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -425,103 +43,110 @@ export type Database = {
       }
       session_requests: {
         Row: {
-          created_at: string | null
+          created_at: string
+          expertise_id: string | null
           id: string
           learner_id: string
           message: string | null
-          scheduled_date: string | null
-          seminar_id: string
-          status: string | null
+          scheduled_at: string | null
+          session_id: string | null
+          status: Database["public"]["Enums"]["request_status"]
           teacher_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
+          expertise_id?: string | null
           id?: string
           learner_id: string
           message?: string | null
-          scheduled_date?: string | null
-          seminar_id: string
-          status?: string | null
+          scheduled_at?: string | null
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
           teacher_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
+          expertise_id?: string | null
           id?: string
           learner_id?: string
           message?: string | null
-          scheduled_date?: string | null
-          seminar_id?: string
-          status?: string | null
+          scheduled_at?: string | null
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
           teacher_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "session_requests_seminar_id_fkey"
-            columns: ["seminar_id"]
+            foreignKeyName: "session_requests_expertise_id_fkey"
+            columns: ["expertise_id"]
             isOneToOne: false
-            referencedRelation: "seminars"
+            referencedRelation: "teacher_expertise"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_sessions"
             referencedColumns: ["id"]
           },
         ]
       }
       teacher_expertise: {
         Row: {
-          created_at: string | null
-          domain_tag: string
+          created_at: string
+          domain_tag: Database["public"]["Enums"]["domain_tag"]
           expertise_text: string
           id: string
-          is_active: boolean | null
-          updated_at: string | null
+          is_active: boolean
+          updated_at: string
           user_id: string
         }
         Insert: {
-          created_at?: string | null
-          domain_tag: string
+          created_at?: string
+          domain_tag?: Database["public"]["Enums"]["domain_tag"]
           expertise_text: string
           id?: string
-          is_active?: boolean | null
-          updated_at?: string | null
+          is_active?: boolean
+          updated_at?: string
           user_id: string
         }
         Update: {
-          created_at?: string | null
-          domain_tag?: string
+          created_at?: string
+          domain_tag?: Database["public"]["Enums"]["domain_tag"]
           expertise_text?: string
           id?: string
-          is_active?: boolean | null
-          updated_at?: string | null
+          is_active?: boolean
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
       teaching_reviews: {
         Row: {
-          created_at: string | null
+          created_at: string
           experience_rating: number
           feedback: string | null
           id: string
-          learner_id: string | null
           session_id: string
           teacher_id: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           experience_rating: number
           feedback?: string | null
           id?: string
-          learner_id?: string | null
           session_id: string
           teacher_id: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           experience_rating?: number
           feedback?: string | null
           id?: string
-          learner_id?: string | null
           session_id?: string
           teacher_id?: string
         }
@@ -529,7 +154,7 @@ export type Database = {
           {
             foreignKeyName: "teaching_reviews_session_id_fkey"
             columns: ["session_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "teaching_sessions"
             referencedColumns: ["id"]
           },
@@ -538,78 +163,39 @@ export type Database = {
       teaching_sessions: {
         Row: {
           actual_minutes: number | null
-          created_at: string | null
+          created_at: string
           credits_earned: number | null
           ended_at: string | null
           id: string
-          learner_id: string | null
           started_at: string | null
-          status: string | null
+          status: Database["public"]["Enums"]["session_status"]
           teacher_id: string
           title: string | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           actual_minutes?: number | null
-          created_at?: string | null
+          created_at?: string
           credits_earned?: number | null
           ended_at?: string | null
           id?: string
-          learner_id?: string | null
           started_at?: string | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["session_status"]
           teacher_id: string
           title?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           actual_minutes?: number | null
-          created_at?: string | null
+          created_at?: string
           credits_earned?: number | null
           ended_at?: string | null
           id?: string
-          learner_id?: string | null
           started_at?: string | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["session_status"]
           teacher_id?: string
           title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      trust_scores: {
-        Row: {
-          confidence_percentage: number
-          created_at: string | null
-          data_consistency_score: number | null
-          data_freshness_days: number | null
-          data_source: string
-          id: string
-          last_calculated: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          confidence_percentage?: number
-          created_at?: string | null
-          data_consistency_score?: number | null
-          data_freshness_days?: number | null
-          data_source: string
-          id?: string
-          last_calculated?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          confidence_percentage?: number
-          created_at?: string | null
-          data_consistency_score?: number | null
-          data_freshness_days?: number | null
-          data_source?: string
-          id?: string
-          last_calculated?: string | null
-          updated_at?: string | null
-          user_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -621,7 +207,24 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      domain_tag:
+        | "cs"
+        | "math"
+        | "design"
+        | "science"
+        | "language"
+        | "music"
+        | "business"
+        | "other"
+      request_status: "pending" | "accepted" | "declined" | "scheduled"
+      session_status:
+        | "pending"
+        | "accepted"
+        | "declined"
+        | "scheduled"
+        | "active"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -748,6 +351,27 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      domain_tag: [
+        "cs",
+        "math",
+        "design",
+        "science",
+        "language",
+        "music",
+        "business",
+        "other",
+      ],
+      request_status: ["pending", "accepted", "declined", "scheduled"],
+      session_status: [
+        "pending",
+        "accepted",
+        "declined",
+        "scheduled",
+        "active",
+        "completed",
+        "cancelled",
+      ],
+    },
   },
 } as const
