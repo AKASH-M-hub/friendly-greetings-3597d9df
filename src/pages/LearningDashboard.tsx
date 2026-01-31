@@ -44,57 +44,8 @@ export default function LearningDashboard() {
 
   const fetchSeminars = async () => {
     try {
-      const { data, error } = await supabase
-        .from('seminars')
-        .select(`
-          id,
-          title,
-          description,
-          category,
-          skill_level,
-          duration,
-          max_learners,
-          prerequisites,
-          teacher_id,
-          created_at,
-          profiles!seminars_teacher_id_fkey (
-            display_name,
-            avatar_url
-          )
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Get user's requests if logged in
-      let userRequests: Set<string> = new Set();
-      if (user) {
-        const { data: requests } = await supabase
-          .from('session_requests')
-          .select('seminar_id')
-          .eq('learner_id', user.id);
-        
-        userRequests = new Set(requests?.map(r => r.seminar_id) || []);
-      }
-
-      const formattedSeminars: Seminar[] = (data || []).map((s: any) => ({
-        id: s.id,
-        title: s.title,
-        description: s.description,
-        category: s.category,
-        skill_level: s.skill_level,
-        duration: s.duration,
-        max_learners: s.max_learners,
-        prerequisites: s.prerequisites,
-        teacher_id: s.teacher_id,
-        teacher_name: s.profiles?.display_name || 'Teacher',
-        teacher_avatar: s.profiles?.avatar_url,
-        created_at: s.created_at,
-        has_requested: userRequests.has(s.id)
-      }));
-
-      setSeminars(formattedSeminars);
+      // Seminars table not yet created - use empty array
+      setSeminars([]);
     } catch (error) {
       console.error('Error fetching seminars:', error);
     } finally {

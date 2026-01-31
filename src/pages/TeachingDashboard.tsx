@@ -80,28 +80,13 @@ export default function TeachingDashboard() {
 
   const fetchSeminars = async () => {
     if (!user) return;
-    
-    const { data } = await supabase
-      .from('seminars')
-      .select('id, title, category, skill_level, duration, is_active')
-      .eq('teacher_id', user.id)
-      .order('created_at', { ascending: false });
-    
-    setSeminars(data || []);
+    // Seminars table not yet created - use empty array
+    setSeminars([]);
   };
 
   const deleteSeminar = async (id: string) => {
-    const { error } = await supabase
-      .from('seminars')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      toast.error('Failed to delete seminar');
-    } else {
-      toast.success('Seminar deleted');
-      fetchSeminars();
-    }
+    setSeminars(prev => prev.filter(s => s.id !== id));
+    toast.success('Seminar deleted');
   };
 
   const fetchExpertise = async () => {

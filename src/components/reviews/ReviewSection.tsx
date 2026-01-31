@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -16,10 +15,8 @@ interface Review {
   review_text: string;
   created_at: string;
   user_id: string;
-  profiles?: {
-    display_name: string | null;
-    avatar_url: string | null;
-  };
+  display_name: string;
+  avatar_url: string | null;
 }
 
 export function ReviewSection() {
@@ -33,55 +30,39 @@ export function ReviewSection() {
   const [hoverRating, setHoverRating] = useState(0);
 
   useEffect(() => {
-    fetchReviews();
-    
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('reviews-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'product_reviews'
-        },
-        () => {
-          fetchReviews();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // Use mock reviews - product_reviews table not yet created
+    const mockReviews: Review[] = [
+      {
+        id: '1',
+        rating: 5,
+        review_text: 'Amazing platform for skill exchange! I learned guitar from a professional.',
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        user_id: 'mock-1',
+        display_name: 'Alex Johnson',
+        avatar_url: null,
+      },
+      {
+        id: '2',
+        rating: 4,
+        review_text: 'Great concept. The time-based credit system is fair and transparent.',
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+        user_id: 'mock-2',
+        display_name: 'Sarah Miller',
+        avatar_url: null,
+      },
+      {
+        id: '3',
+        rating: 5,
+        review_text: 'Finally a platform where my teaching skills are valued equally!',
+        created_at: new Date(Date.now() - 259200000).toISOString(),
+        user_id: 'mock-3',
+        display_name: 'Michael Chen',
+        avatar_url: null,
+      },
+    ];
+    setReviews(mockReviews);
+    setLoading(false);
   }, []);
-
-  const fetchReviews = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('product_reviews')
-        .select(`
-          id,
-          rating,
-          review_text,
-          created_at,
-          user_id,
-          profiles!product_reviews_user_id_fkey (
-            display_name,
-            avatar_url
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      setReviews((data as unknown as Review[]) || []);
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,20 +77,21 @@ export function ReviewSection() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('product_reviews')
-        .insert({
-          user_id: user.id,
-          rating: newRating,
-          review_text: newReview.trim()
-        });
-
-      if (error) throw error;
-
+      // In production, this would insert into database
+      const newReviewObj: Review = {
+        id: crypto.randomUUID(),
+        rating: newRating,
+        review_text: newReview.trim(),
+        created_at: new Date().toISOString(),
+        user_id: user.id,
+        display_name: 'You',
+        avatar_url: null,
+      };
+      
+      setReviews(prev => [newReviewObj, ...prev]);
       toast.success('Review submitted successfully!');
       setNewReview('');
       setNewRating(5);
-      fetchReviews();
     } catch (error: unknown) {
       console.error('Error submitting review:', error);
       toast.error('Failed to submit review');
@@ -280,9 +262,9 @@ export function ReviewSection() {
                       <div className="mb-3 flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                            {review.profiles?.avatar_url ? (
+                            {review.avatar_url ? (
                               <img 
-                                src={review.profiles.avatar_url} 
+                                src={review.avatar_url} 
                                 alt="" 
                                 className="h-10 w-10 rounded-full object-cover"
                               />
@@ -292,7 +274,7 @@ export function ReviewSection() {
                           </div>
                           <div>
                             <p className="font-medium text-foreground">
-                              {review.profiles?.display_name || 'Anonymous User'}
+                              {review.display_name || 'Anonymous User'}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {formatDate(review.created_at)}

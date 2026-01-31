@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_ledger: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          entry_type: string
+          id: string
+          metadata: Json | null
+          partner_user_id: string | null
+          role: string | null
+          session_id: string | null
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          description?: string | null
+          entry_type: string
+          id?: string
+          metadata?: Json | null
+          partner_user_id?: string | null
+          role?: string | null
+          session_id?: string | null
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          entry_type?: string
+          id?: string
+          metadata?: Json | null
+          partner_user_id?: string | null
+          role?: string | null
+          session_id?: string | null
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -95,6 +140,122 @@ export type Database = {
           },
         ]
       }
+      session_rooms: {
+        Row: {
+          actual_duration_seconds: number | null
+          created_at: string
+          id: string
+          learner_id: string | null
+          learner_joined_at: string | null
+          room_code: string
+          session_ended_at: string | null
+          session_id: string
+          session_started_at: string | null
+          status: string
+          teacher_id: string
+          teacher_joined_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_duration_seconds?: number | null
+          created_at?: string
+          id?: string
+          learner_id?: string | null
+          learner_joined_at?: string | null
+          room_code: string
+          session_ended_at?: string | null
+          session_id: string
+          session_started_at?: string | null
+          status?: string
+          teacher_id: string
+          teacher_joined_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_duration_seconds?: number | null
+          created_at?: string
+          id?: string
+          learner_id?: string | null
+          learner_joined_at?: string | null
+          room_code?: string
+          session_ended_at?: string | null
+          session_id?: string
+          session_started_at?: string | null
+          status?: string
+          teacher_id?: string
+          teacher_joined_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_rooms_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_transactions: {
+        Row: {
+          completed_at: string | null
+          consistency_hash: string | null
+          created_at: string
+          credits_amount: number
+          duration_minutes: number
+          error_message: string | null
+          id: string
+          learner_confirmed: boolean
+          learner_confirmed_at: string | null
+          learner_id: string
+          recovery_data: Json | null
+          session_id: string
+          status: string
+          teacher_confirmed: boolean
+          teacher_confirmed_at: string | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          consistency_hash?: string | null
+          created_at?: string
+          credits_amount?: number
+          duration_minutes?: number
+          error_message?: string | null
+          id?: string
+          learner_confirmed?: boolean
+          learner_confirmed_at?: string | null
+          learner_id: string
+          recovery_data?: Json | null
+          session_id: string
+          status?: string
+          teacher_confirmed?: boolean
+          teacher_confirmed_at?: string | null
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          consistency_hash?: string | null
+          created_at?: string
+          credits_amount?: number
+          duration_minutes?: number
+          error_message?: string | null
+          id?: string
+          learner_confirmed?: boolean
+          learner_confirmed_at?: string | null
+          learner_id?: string
+          recovery_data?: Json | null
+          session_id?: string
+          status?: string
+          teacher_confirmed?: boolean
+          teacher_confirmed_at?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       teacher_expertise: {
         Row: {
           created_at: string
@@ -167,6 +328,7 @@ export type Database = {
           credits_earned: number | null
           ended_at: string | null
           id: string
+          learner_id: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["session_status"]
           teacher_id: string
@@ -179,6 +341,7 @@ export type Database = {
           credits_earned?: number | null
           ended_at?: string | null
           id?: string
+          learner_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["session_status"]
           teacher_id: string
@@ -191,11 +354,89 @@ export type Database = {
           credits_earned?: number | null
           ended_at?: string | null
           id?: string
+          learner_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["session_status"]
           teacher_id?: string
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      transaction_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          new_status: string
+          previous_status: string | null
+          transaction_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          new_status: string
+          previous_status?: string | null
+          transaction_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          new_status?: string
+          previous_status?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_audit_log_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "session_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_credit_balances: {
+        Row: {
+          created_at: string
+          current_balance: number
+          held_credits: number
+          id: string
+          last_ledger_entry_id: string | null
+          total_earned: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_balance?: number
+          held_credits?: number
+          id?: string
+          last_ledger_entry_id?: string | null
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_balance?: number
+          held_credits?: number
+          id?: string
+          last_ledger_entry_id?: string | null
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
