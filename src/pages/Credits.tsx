@@ -2,145 +2,17 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Unlock,
-  Coins
+  Coins,
+  Loader2
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CreditWallet, WalletStats, CreditTransaction } from '@/components/credits/CreditWallet';
-import { DualSessionLog, SessionLogEntry } from '@/components/credits/DualSessionLog';
-
-// Mock data - would come from database
-const mockWalletStats: WalletStats = {
-  totalBalance: 24,
-  totalEarned: 45,
-  totalSpent: 21,
-  heldCredits: 0,
-  earnedThisWeek: 7,
-  spentThisWeek: 3,
-};
-
-const mockTransactions: CreditTransaction[] = [
-  { 
-    id: '1', 
-    type: 'earned', 
-    amount: 2, 
-    description: 'React Fundamentals Session', 
-    partnerName: 'John Smith',
-    date: 'Today', 
-    time: '2:30 PM',
-    sessionDuration: '1h',
-    status: 'completed'
-  },
-  { 
-    id: '2', 
-    type: 'spent', 
-    amount: 1, 
-    description: 'Spanish Conversation', 
-    partnerName: 'Carlos Rivera',
-    date: 'Today', 
-    time: '11:00 AM',
-    sessionDuration: '1h',
-    status: 'completed'
-  },
-  { 
-    id: '3', 
-    type: 'earned', 
-    amount: 3, 
-    description: 'Advanced TypeScript', 
-    partnerName: 'Sarah Lee',
-    date: 'Yesterday', 
-    time: '4:00 PM',
-    sessionDuration: '1.5h',
-    status: 'completed'
-  },
-  { 
-    id: '4', 
-    type: 'spent', 
-    amount: 1, 
-    description: 'UI Design Basics', 
-    partnerName: 'Emma Wilson',
-    date: 'Yesterday', 
-    time: '10:00 AM',
-    sessionDuration: '1h',
-    status: 'completed'
-  },
-  { 
-    id: '5', 
-    type: 'earned', 
-    amount: 2, 
-    description: 'JavaScript Essentials', 
-    partnerName: 'Mike Brown',
-    date: '2 days ago', 
-    time: '3:00 PM',
-    sessionDuration: '1h',
-    status: 'completed'
-  },
-];
-
-const mockSessionLog: SessionLogEntry[] = [
-  {
-    id: '1',
-    sessionId: 'sess-abc123',
-    role: 'teacher',
-    partnerName: 'John Smith',
-    topic: 'React Fundamentals',
-    date: 'Today',
-    time: '2:30 PM',
-    duration: '1h',
-    durationMinutes: 60,
-    creditsEarned: 2,
-    status: 'completed',
-    confirmedByTeacher: true,
-    confirmedByLearner: true,
-  },
-  {
-    id: '2',
-    sessionId: 'sess-def456',
-    role: 'learner',
-    partnerName: 'Carlos Rivera',
-    topic: 'Spanish Conversation',
-    date: 'Today',
-    time: '11:00 AM',
-    duration: '1h',
-    durationMinutes: 60,
-    creditsSpent: 1,
-    status: 'completed',
-    confirmedByTeacher: true,
-    confirmedByLearner: true,
-  },
-  {
-    id: '3',
-    sessionId: 'sess-ghi789',
-    role: 'teacher',
-    partnerName: 'Sarah Lee',
-    topic: 'Advanced TypeScript',
-    date: 'Yesterday',
-    time: '4:00 PM',
-    duration: '1.5h',
-    durationMinutes: 90,
-    creditsEarned: 3,
-    status: 'completed',
-    confirmedByTeacher: true,
-    confirmedByLearner: true,
-  },
-  {
-    id: '4',
-    sessionId: 'sess-jkl012',
-    role: 'learner',
-    partnerName: 'Emma Wilson',
-    topic: 'UI Design Basics',
-    date: 'Yesterday',
-    time: '10:00 AM',
-    duration: '1h',
-    durationMinutes: 60,
-    creditsSpent: 1,
-    status: 'pending-confirmation',
-    confirmedByTeacher: true,
-    confirmedByLearner: false,
-  },
-];
+import { CreditWallet } from '@/components/credits/CreditWallet';
+import { DualSessionLog } from '@/components/credits/DualSessionLog';
+import { useCreditData } from '@/hooks/useSessionData';
+import { useAuth } from '@/contexts/AuthContext';
 
 const unlockableFeatures = [
   { id: 1, name: 'Resume Builder', cost: 15, description: 'Create a professional resume with AI assistance' },
@@ -150,6 +22,46 @@ const unlockableFeatures = [
 
 export default function Credits() {
   const [activeTab, setActiveTab] = useState('wallet');
+  const { walletStats, transactions, sessionLog, loading, error } = useCreditData();
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen p-6 lg:p-8">
+          <div className="flex flex-col items-center justify-center py-20">
+            <Coins className="mb-4 h-12 w-12 text-muted-foreground/50" />
+            <p className="text-muted-foreground">Please log in to view your credits</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen p-6 lg:p-8">
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen p-6 lg:p-8">
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-destructive mb-2">Error loading credit data</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -174,11 +86,11 @@ export default function Credits() {
             {/* Main Content */}
             <div className="lg:col-span-2">
               <TabsContent value="wallet" className="mt-0">
-                <CreditWallet stats={mockWalletStats} transactions={mockTransactions} />
+                <CreditWallet stats={walletStats} transactions={transactions} />
               </TabsContent>
 
               <TabsContent value="sessions" className="mt-0">
-                <DualSessionLog sessions={mockSessionLog} />
+                <DualSessionLog sessions={sessionLog} />
               </TabsContent>
             </div>
 
@@ -212,9 +124,9 @@ export default function Credits() {
                         variant="chrono-outline" 
                         size="sm" 
                         className="w-full"
-                        disabled={mockWalletStats.totalBalance < feature.cost}
+                        disabled={walletStats.totalBalance < feature.cost}
                       >
-                        {mockWalletStats.totalBalance >= feature.cost ? 'Unlock Now' : 'Not Enough Credits'}
+                        {walletStats.totalBalance >= feature.cost ? 'Unlock Now' : 'Not Enough Credits'}
                       </Button>
                     </motion.div>
                   ))}
