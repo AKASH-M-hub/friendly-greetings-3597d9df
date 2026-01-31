@@ -4,11 +4,13 @@
 // =============================================
 
 // Value Unit conversion rates (system rules)
+// Based on credit rates: 1 min teaching = 2 credits, 1 min learning = 1 credit
 export const VALUE_UNIT_RATES = {
-  TEACHING_HOUR: 2,    // 1 hour teaching → 2 VU
-  LEARNING_HOUR: 1,    // 1 hour learning → 1 VU
-  COMPLETED_SESSION: 1, // 1 completed session → 1 VU
-  CREDIT_UTILIZED: 1,  // 1 credit utilized → 1 VU
+  TEACHING_MINUTE: 2,    // 1 minute teaching → 2 VU (credits)
+  LEARNING_MINUTE: 1,    // 1 minute learning → 1 VU (credits spent)
+  COMPLETED_SESSION: 1,  // 1 completed session → 1 VU bonus
+  CREDIT_UTILIZED: 1,    // 1 credit utilized → 1 VU
+  INITIAL_FREE_CREDITS: 10, // Starting credits for new users
 } as const;
 
 export interface ValueRestoration {

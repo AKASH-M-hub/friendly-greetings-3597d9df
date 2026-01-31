@@ -266,7 +266,7 @@ export function CreditWallet({ stats, transactions }: CreditWalletProps) {
               </div>
               <div>
                 <p className="font-medium text-foreground">Teaching</p>
-                <p className="text-sm text-muted-foreground">+2 credits per hour</p>
+                <p className="text-sm text-muted-foreground">+2 credits per minute</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10">
@@ -275,11 +275,20 @@ export function CreditWallet({ stats, transactions }: CreditWalletProps) {
               </div>
               <div>
                 <p className="font-medium text-foreground">Learning</p>
-                <p className="text-sm text-muted-foreground">-1 credit per hour</p>
+                <p className="text-sm text-muted-foreground">-1 credit per minute</p>
               </div>
             </div>
           </div>
           <Separator className="my-4" />
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/10 mb-3">
+            <Coins className="h-5 w-5 text-primary mt-0.5" />
+            <div>
+              <p className="font-medium text-foreground">New User Bonus</p>
+              <p className="text-sm text-muted-foreground">
+                Every new user starts with 10 free credits!
+              </p>
+            </div>
+          </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-500/10">
             <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
             <div>
