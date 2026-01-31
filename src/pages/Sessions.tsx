@@ -7,7 +7,8 @@ import {
   Star,
   GraduationCap,
   BookOpen,
-  Loader2
+  Loader2,
+  Shield
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +20,11 @@ import { useSessionData } from '@/hooks/useSessionData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMode } from '@/contexts/ModeContext';
 import { TimetableGenerator } from '@/components/sessions/TimetableGenerator';
+import { 
+  TransactionIntegrityDisplay,
+  CreditLedgerView,
+  RecoverySystemDisplay
+} from '@/components/transaction';
 
 type SessionType = 'all' | 'teaching' | 'learning';
 
@@ -29,7 +35,7 @@ export default function Sessions() {
   const { currentMode } = useMode();
 
   // Default to current mode's tab if mode is set
-  const [activeTab, setActiveTab] = useState<'history' | 'timetable'>('history');
+  const [activeTab, setActiveTab] = useState<'history' | 'timetable' | 'integrity'>('history');
   const [timetableMode, setTimetableMode] = useState<'teaching' | 'learning'>(
     currentMode || 'teaching'
   );
@@ -149,8 +155,8 @@ export default function Sessions() {
           </Card>
         </div>
 
-        {/* Tabs for History and Timetable */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'history' | 'timetable')}>
+        {/* Tabs for History, Timetable, and Transaction Integrity */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'history' | 'timetable' | 'integrity')}>
           <TabsList className="mb-6">
             <TabsTrigger value="history" className="gap-2">
               <Clock className="h-4 w-4" />
@@ -159,6 +165,10 @@ export default function Sessions() {
             <TabsTrigger value="timetable" className="gap-2">
               <Calendar className="h-4 w-4" />
               Generate Timetable
+            </TabsTrigger>
+            <TabsTrigger value="integrity" className="gap-2">
+              <Shield className="h-4 w-4" />
+              Transaction Integrity
             </TabsTrigger>
           </TabsList>
 
@@ -309,6 +319,19 @@ export default function Sessions() {
               sessions={sessions.filter(s => s.type === timetableMode)} 
               mode={timetableMode}
             />
+          </TabsContent>
+
+          {/* Transaction Integrity Tab */}
+          <TabsContent value="integrity">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="space-y-6">
+                <TransactionIntegrityDisplay showDetailed={true} />
+                <RecoverySystemDisplay />
+              </div>
+              <div>
+                <CreditLedgerView limit={30} showFilters={true} />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
