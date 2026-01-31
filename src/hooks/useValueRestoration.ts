@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  ValueRestoration, 
-  TimelineEvent, 
+import {
+  ValueRestoration,
+  TimelineEvent,
   SkillActivation,
   MonthlyValueSummary,
-  VALUE_UNIT_RATES 
+  VALUE_UNIT_RATES
 } from '@/types/chrono';
 
 export function useValueRestoration() {
@@ -24,7 +24,7 @@ export function useValueRestoration() {
 
     const now = new Date();
     let startDate: Date;
-    
+
     switch (period) {
       case 'week':
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -38,6 +38,29 @@ export function useValueRestoration() {
     }
 
     try {
+      if (user.id === 'mock-user-id') {
+        const result: ValueRestoration = {
+          userId: user.id,
+          period,
+          hoursTeaching: 12.5,
+          hoursLearning: 8.0,
+          sessionsCompleted: 15,
+          creditsEarned: 50,
+          creditsUtilized: 32,
+          teachingVU: 125.0,
+          learningVU: 40.0,
+          sessionVU: 75.0,
+          utilizationVU: 16.0,
+          totalVU: 256.0,
+          peopleHelped: 8,
+          peopleLearnedFrom: 3,
+          skillsActivated: ['React', 'TypeScript', 'Piano', 'Design'],
+          calculatedAt: new Date().toISOString(),
+        };
+        setRestoration(result);
+        return result;
+      }
+
       // Fetch teaching sessions (using 'title' column for skill)
       const { data: teachingSessions } = await supabase
         .from('teaching_sessions')
@@ -61,7 +84,7 @@ export function useValueRestoration() {
       const hoursLearning = (learningSessions || []).reduce(
         (sum, s) => sum + (s.actual_minutes || 0) / 60, 0
       );
-      const sessionsCompleted = 
+      const sessionsCompleted =
         (teachingSessions?.length || 0) + (learningSessions?.length || 0);
 
       // Credits calculation
@@ -121,6 +144,29 @@ export function useValueRestoration() {
     if (!user) return [];
 
     try {
+      if (user.id === 'mock-user-id') {
+        const mockEvents: TimelineEvent[] = [
+          {
+            id: 'mock-evt-1',
+            type: 'teaching',
+            timestamp: new Date().toISOString(),
+            description: 'Taught React Basics for 60 minutes',
+            valueUnits: 15.5,
+            skillInvolved: 'React',
+          },
+          {
+            id: 'mock-evt-2',
+            type: 'learning',
+            timestamp: new Date(Date.now() - 86400000).toISOString(),
+            description: 'Learned Piano for 45 minutes',
+            valueUnits: 5.0,
+            skillInvolved: 'Piano',
+          }
+        ];
+        setTimeline(mockEvents);
+        return mockEvents;
+      }
+
       const { data: sessions } = await supabase
         .from('teaching_sessions')
         .select('id, teacher_id, learner_id, actual_minutes, title, created_at, status')
@@ -132,15 +178,15 @@ export function useValueRestoration() {
       const events: TimelineEvent[] = (sessions || []).map(session => {
         const isTeacher = session.teacher_id === user.id;
         const hours = (session.actual_minutes || 0) / 60;
-        const vu = isTeacher 
-          ? hours * VALUE_UNIT_RATES.TEACHING_HOUR 
+        const vu = isTeacher
+          ? hours * VALUE_UNIT_RATES.TEACHING_HOUR
           : hours * VALUE_UNIT_RATES.LEARNING_HOUR;
 
         return {
           id: session.id,
           type: isTeacher ? 'teaching' : 'learning',
           timestamp: session.created_at || new Date().toISOString(),
-          description: isTeacher 
+          description: isTeacher
             ? `Taught ${session.title || 'a skill'} for ${session.actual_minutes} minutes`
             : `Learned ${session.title || 'a skill'} for ${session.actual_minutes} minutes`,
           valueUnits: Math.round(vu * 10) / 10,
@@ -160,6 +206,16 @@ export function useValueRestoration() {
     if (!user) return [];
 
     try {
+      if (user.id === 'mock-user-id') {
+        const mockSkills: SkillActivation[] = [
+          { skill: 'React', timesUsed: 5, totalVUGenerated: 45.5, isActive: true, lastUsed: new Date().toISOString() },
+          { skill: 'TypeScript', timesUsed: 3, totalVUGenerated: 25.0, isActive: true, lastUsed: new Date().toISOString() },
+          { skill: 'Design', timesUsed: 2, totalVUGenerated: 15.0, isActive: false, lastUsed: new Date(Date.now() - 100 * 86400000).toISOString() },
+        ];
+        setSkills(mockSkills);
+        return mockSkills;
+      }
+
       const { data: sessions } = await supabase
         .from('teaching_sessions')
         .select('title, actual_minutes, teacher_id, created_at')
@@ -174,8 +230,8 @@ export function useValueRestoration() {
 
         const isTeacher = session.teacher_id === user.id;
         const hours = (session.actual_minutes || 0) / 60;
-        const vu = isTeacher 
-          ? hours * VALUE_UNIT_RATES.TEACHING_HOUR 
+        const vu = isTeacher
+          ? hours * VALUE_UNIT_RATES.TEACHING_HOUR
           : hours * VALUE_UNIT_RATES.LEARNING_HOUR;
 
         const existing = skillMap.get(skill);
@@ -200,7 +256,7 @@ export function useValueRestoration() {
         .map(s => ({
           ...s,
           totalVUGenerated: Math.round(s.totalVUGenerated * 10) / 10,
-          isActive: s.lastUsed 
+          isActive: s.lastUsed
             ? (Date.now() - new Date(s.lastUsed).getTime()) < 30 * 24 * 60 * 60 * 1000
             : false,
         }))

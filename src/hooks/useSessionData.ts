@@ -98,6 +98,43 @@ export function useSessionData() {
       return;
     }
 
+    if (user.id === 'mock-user-id') {
+      // Mock data for demo user
+      const mockSessions: SessionData[] = [
+        {
+          id: 'mock-1',
+          title: 'React Fundamentals',
+          type: 'teaching',
+          date: 'Today',
+          time: '10:00 AM',
+          duration: '1h',
+          durationMinutes: 60,
+          partnerId: 'mock-learner-1',
+          partnerName: 'Alice Learner',
+          creditsChange: 2,
+          status: 'completed',
+          rating: 5,
+        },
+        {
+          id: 'mock-2',
+          title: 'Advanced Guitar',
+          type: 'learning',
+          date: 'Yesterday',
+          time: '2:00 PM',
+          duration: '45m',
+          durationMinutes: 45,
+          partnerId: 'mock-teacher-1',
+          partnerName: 'Bob Teacher',
+          creditsChange: -1,
+          status: 'completed',
+          rating: 5,
+        }
+      ];
+      setSessions(mockSessions);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -261,6 +298,92 @@ export function useCreditData() {
       return;
     }
 
+    if (user.id === 'mock-user-id') {
+      // Mock wallet stats
+      setWalletStats({
+        totalBalance: 125,
+        totalEarned: 350,
+        totalSpent: 225,
+        heldCredits: 15,
+        earnedThisWeek: 45,
+        spentThisWeek: 30,
+      });
+
+      // Mock transactions
+      setTransactions([
+        {
+          id: 'mock-tx-1',
+          type: 'earned',
+          amount: 15,
+          description: 'Web Development Basics',
+          partnerName: 'Sarah Smith',
+          date: 'Today',
+          time: '2:30 PM',
+          sessionDuration: '1h 30m',
+          status: 'completed',
+        },
+        {
+          id: 'mock-tx-2',
+          type: 'spent',
+          amount: 10,
+          description: 'Piano Lessons',
+          partnerName: 'John Doe',
+          date: 'Yesterday',
+          time: '11:00 AM',
+          sessionDuration: '1h',
+          status: 'completed',
+        },
+        {
+          id: 'mock-tx-3',
+          type: 'held',
+          amount: 5,
+          description: 'Pending Verification',
+          partnerName: 'System',
+          date: 'Yesterday',
+          time: '5:00 PM',
+          sessionDuration: '-',
+          status: 'pending',
+        }
+      ]);
+
+      // Mock session log
+      setSessionLog([
+        {
+          id: 'mock-log-1',
+          sessionId: 'sess-1',
+          role: 'teacher',
+          partnerName: 'Alice Learner',
+          topic: 'React Fundamentals',
+          date: 'Today',
+          time: '10:00 AM',
+          duration: '1h',
+          durationMinutes: 60,
+          creditsEarned: 2,
+          status: 'completed',
+          confirmedByTeacher: true,
+          confirmedByLearner: true,
+        },
+        {
+          id: 'mock-log-2',
+          sessionId: 'sess-2',
+          role: 'learner',
+          partnerName: 'Bob Teacher',
+          topic: 'Advanced Guitar',
+          date: 'Yesterday',
+          time: '2:00 PM',
+          duration: '45m',
+          durationMinutes: 45,
+          creditsSpent: 1,
+          status: 'completed',
+          confirmedByTeacher: true,
+          confirmedByLearner: true,
+        }
+      ]);
+
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -302,13 +425,13 @@ export function useCreditData() {
       // Calculate wallet stats
       const completedTeaching = teachingSessions?.filter(s => s.status === 'completed') || [];
       const completedLearning = learningSessions?.filter(s => s.status === 'completed') || [];
-      
+
       const totalEarned = completedTeaching.reduce((sum, s) => sum + (s.credits_earned || 0), 0);
       const totalSpent = completedLearning.reduce((sum, s) => sum + Math.ceil((s.actual_minutes || 0) / 60), 0);
-      
+
       const weekTeaching = completedTeaching.filter(s => new Date(s.created_at) >= weekAgo);
       const weekLearning = completedLearning.filter(s => new Date(s.created_at) >= weekAgo);
-      
+
       const earnedThisWeek = weekTeaching.reduce((sum, s) => sum + (s.credits_earned || 0), 0);
       const spentThisWeek = weekLearning.reduce((sum, s) => sum + Math.ceil((s.actual_minutes || 0) / 60), 0);
 
