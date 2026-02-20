@@ -21,6 +21,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const configuredAuthRedirectUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
+
+  const isRedirectConfigurationError = (message?: string) => {
+    if (!message) return false;
+    return /redirect|emailredirectto|url/i.test(message);
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -56,12 +63,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        ...(configuredAuthRedirectUrl ? { emailRedirectTo: configuredAuthRedirectUrl } : {}),
         data: {
           display_name: displayName,
         },
       },
     });
+
+    if (error && isRedirectConfigurationError(error.message)) {
+      const retry = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: displayName,
+          },
+        },
+      });
+      return { data: retry.data, error: retry.error as Error | null };
+    }
+
     return { data, error: error as Error | null };
   };
 
@@ -92,9 +113,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       type: 'signup',
       email,
       options: {
-        emailRedirectTo: window.location.origin,
+        ...(configuredAuthRedirectUrl ? { emailRedirectTo: configuredAuthRedirectUrl } : {}),
       },
     });
+
+    if (error && isRedirectConfigurationError(error.message)) {
+      const retry = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      return { error: retry.error as Error | null };
+    }
+
     return { error: error as Error | null };
   };
 

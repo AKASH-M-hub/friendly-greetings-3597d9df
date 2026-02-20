@@ -292,7 +292,7 @@ function LandingContent() {
               <span className="font-display font-semibold text-foreground">Chrono</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Build for IDE-A-THON @2026
+              Build for Protothon @Princeton 2026. All rights reserved.
             </p>
           </div>
         </div>
