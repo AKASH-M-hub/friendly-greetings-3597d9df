@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb, BookOpen, Trash2, Video, ShieldCheck, UserCheck } from 'lucide-react';
+import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb, BookOpen, Trash2, Video, ShieldCheck, UserCheck, Shield, Activity, AlertTriangle, CheckCircle2, Clock, XCircle, Lock } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useMode } from '@/contexts/ModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExpertiseDeclaration } from '@/components/teaching/ExpertiseDeclaration';
@@ -19,6 +20,8 @@ import { toast } from 'sonner';
 import { useTeacherSkills } from '@/hooks/useTeacherSkills';
 import { useTeacherPerformance } from '@/hooks/useTeacherPerformance';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { useIdentityVerification } from '@/hooks/useIdentityVerification';
+import { useBehavioralMonitoring } from '@/hooks/useBehavioralMonitoring';
 
 type DomainTag = 'cs' | 'math' | 'design' | 'science' | 'language' | 'music' | 'business' | 'other';
 
@@ -74,6 +77,8 @@ export default function TeachingDashboard() {
   const { getApprovedSkills, getPendingSkills } = useTeacherSkills();
   const { performance, getPerformanceBreakdown, meetsMinimumStandards } = useTeacherPerformance();
   const { isAdmin, getDashboardStats } = useAdminDashboard();
+  const { verification, getVerificationProgress, loading: verifyLoading } = useIdentityVerification();
+  const { getBehavioralHealthScore, creditsFrozen, anomalies } = useBehavioralMonitoring();
 
   const getDismissedReviewSessionIds = (userId: string): Set<string> => {
     const storageKey = `chrono:dismissed-review-prompts:${userId}`;
@@ -272,6 +277,76 @@ export default function TeachingDashboard() {
   const pendingSkills = getPendingSkills();
   const performanceBreakdown = getPerformanceBreakdown();
   const adminStats = getDashboardStats();
+  const verificationProgress = getVerificationProgress();
+  const behavioralHealth = getBehavioralHealthScore();
+
+  const securityLayers = [
+    {
+      id: 1,
+      label: 'Identity Verification',
+      icon: Shield,
+      status: verifyLoading ? 'loading' : verification?.email_verified ? 'active' : 'pending',
+      detail: verifyLoading
+        ? 'Checking…'
+        : verification?.email_verified
+        ? `Level: ${(verification.verification_level ?? 'email').replace(/_/g, ' ')}`
+        : 'Email not verified',
+      progress: verificationProgress,
+    },
+    {
+      id: 2,
+      label: 'Skill Validation',
+      icon: UserCheck,
+      status: approvedSkills.length > 0 ? 'active' : pendingSkills.length > 0 ? 'pending' : 'inactive',
+      detail: `${approvedSkills.length} approved · ${pendingSkills.length} pending`,
+      progress: approvedSkills.length > 0 ? 100 : pendingSkills.length > 0 ? 50 : 0,
+    },
+    {
+      id: 3,
+      label: 'Performance Metrics',
+      icon: Star,
+      status: performance ? (meetsMinimumStandards() ? 'active' : 'warning') : 'inactive',
+      detail: performance
+        ? `${performance.average_rating?.toFixed(1) ?? '0.0'}/5 · ${(performanceBreakdown?.completion ?? 0)}% completion`
+        : 'No data yet',
+      progress: performance ? Math.min(100, (performance.reliability_score ?? 0)) : 0,
+    },
+    {
+      id: 4,
+      label: 'Behavioral Monitor',
+      icon: Activity,
+      status: creditsFrozen ? 'error' : anomalies.filter((a: any) => a.severity === 'critical' || a.severity === 'high').length > 0 ? 'warning' : 'active',
+      detail: creditsFrozen
+        ? 'Credits frozen'
+        : `Health: ${behavioralHealth}/100 · ${anomalies.length} flag${anomalies.length !== 1 ? 's' : ''}`,
+      progress: behavioralHealth,
+    },
+    {
+      id: 5,
+      label: 'Admin Oversight',
+      icon: Lock,
+      status: isAdmin ? 'active' : 'inactive',
+      detail: isAdmin ? `Role active · ${adminStats.pending_approvals} pending` : 'Standard account',
+      progress: isAdmin ? 100 : 60,
+    },
+    {
+      id: 6,
+      label: 'Transaction Integrity',
+      icon: ShieldCheck,
+      status: 'active',
+      detail: 'Dual-confirm guard enabled',
+      progress: 100,
+    },
+  ];
+
+  const statusConfig: Record<string, { color: string; bg: string; Icon: any; label: string }> = {
+    active:   { color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/30', Icon: CheckCircle2, label: 'Active' },
+    pending:  { color: 'text-amber-500',   bg: 'bg-amber-500/10 border-amber-500/30',   Icon: Clock,         label: 'Pending' },
+    warning:  { color: 'text-orange-500',  bg: 'bg-orange-500/10 border-orange-500/30',  Icon: AlertTriangle,  label: 'Warning' },
+    error:    { color: 'text-red-500',     bg: 'bg-red-500/10 border-red-500/30',        Icon: XCircle,        label: 'Error' },
+    inactive: { color: 'text-muted-foreground', bg: 'bg-muted/30 border-border',        Icon: Clock,          label: 'Inactive' },
+    loading:  { color: 'text-blue-500',    bg: 'bg-blue-500/10 border-blue-500/30',      Icon: Clock,          label: 'Loading' },
+  };
 
   return (
     <MainLayout>
@@ -320,6 +395,59 @@ export default function TeachingDashboard() {
             </Button>
           </div>
         </div>
+
+        {/* ── Security Layers Overview ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <Card className="border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Shield className="h-5 w-5 text-primary" />
+                Security Layers
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  {securityLayers.filter(l => l.status === 'active').length}/{securityLayers.length} Active
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {securityLayers.map((layer) => {
+                  const cfg = statusConfig[layer.status];
+                  const LayerIcon = layer.icon;
+                  const StatusIcon = cfg.Icon;
+                  return (
+                    <div
+                      key={layer.id}
+                      className={`rounded-lg border p-4 ${cfg.bg}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <LayerIcon className={`h-4 w-4 ${cfg.color}`} />
+                          <span className="text-sm font-medium text-foreground">
+                            L{layer.id}: {layer.label}
+                          </span>
+                        </div>
+                        <div className={`flex items-center gap-1 text-xs ${cfg.color}`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {cfg.label}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{layer.detail}</p>
+                      <Progress
+                        value={layer.progress}
+                        className="h-1"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* My Seminars */}
         <motion.div
@@ -413,7 +541,7 @@ export default function TeachingDashboard() {
           </motion.div>
         )}
 
-        {/* Stats Grid */}
+        {/* Trust & Skills Grid */}
         <div className="mb-8 grid gap-6 lg:grid-cols-2">
           <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card">
             <CardHeader className="pb-3">
