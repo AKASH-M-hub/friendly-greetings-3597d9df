@@ -50,17 +50,19 @@ export default function Profile() {
   const { modeHistory } = useMode();
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [isEditingSkills, setIsEditingSkills] = useState(false);
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [savingSkills, setSavingSkills] = useState(false);
   const [skillsMetadataId, setSkillsMetadataId] = useState<string | null>(null);
   const [profile, setProfile] = useState({
-    name: 'Alex Johnson',
-    email: 'alex.johnson@email.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    bio: 'Passionate about sharing knowledge and learning new skills. Experienced in web development, design, and product management.',
-    joinDate: 'January 2024',
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: '',
+    joinDate: '',
   });
 
   const [skills, setSkills] = useState<Skill[]>(DEFAULT_SKILLS);
@@ -193,8 +195,92 @@ export default function Profile() {
     }
   };
 
+  const loadProfileFromSupabase = async () => {
+    if (!user) return;
+
+    setLoadingProfile(true);
+    try {
+      const defaultName =
+        (typeof user.user_metadata?.display_name === 'string' && user.user_metadata.display_name.trim()) ||
+        (typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()) ||
+        'User';
+
+      const defaultEmail = user.email || '';
+      const defaultJoinDate = user.created_at
+        ? new Date(user.created_at).toLocaleString('default', { month: 'long', year: 'numeric' })
+        : '';
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name, created_at')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      setProfile((prev) => ({
+        ...prev,
+        name: data?.display_name || defaultName,
+        email: defaultEmail,
+        joinDate: data?.created_at
+          ? new Date(data.created_at).toLocaleString('default', { month: 'long', year: 'numeric' })
+          : defaultJoinDate,
+      }));
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+      toast.error('Failed to load profile details');
+      setProfile((prev) => ({
+        ...prev,
+        name:
+          (typeof user.user_metadata?.display_name === 'string' && user.user_metadata.display_name.trim()) ||
+          (typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()) ||
+          prev.name ||
+          'User',
+        email: user.email || prev.email,
+        joinDate: user.created_at
+          ? new Date(user.created_at).toLocaleString('default', { month: 'long', year: 'numeric' })
+          : prev.joinDate,
+      }));
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const saveProfileToSupabase = async (): Promise<boolean> => {
+    if (!user) return false;
+
+    const displayName = profile.name.trim();
+    if (!displayName) {
+      toast.error('Name cannot be empty');
+      return false;
+    }
+
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          display_name: displayName,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      toast.success('Profile updated');
+      return true;
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast.error('Failed to save profile details');
+      return false;
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
+      loadProfileFromSupabase();
       loadSkillsFromSupabase();
     }
   }, [user]);
@@ -317,13 +403,28 @@ export default function Profile() {
                       <Button
                         variant={isEditing ? "default" : "outline"}
                         size="sm"
-                        onClick={() => setIsEditing(!isEditing)}
+                        onClick={async () => {
+                          if (isEditing) {
+                            const saved = await saveProfileToSupabase();
+                            if (saved) {
+                              setIsEditing(false);
+                            }
+                            return;
+                          }
+
+                          setIsEditing(true);
+                        }}
                         className="gap-2"
+                        disabled={loadingProfile || savingProfile}
                       >
                         <Edit2 className="h-4 w-4" />
-                        {isEditing ? 'Save Changes' : 'Edit Profile'}
+                        {savingProfile ? 'Saving...' : isEditing ? 'Save Changes' : 'Edit Profile'}
                       </Button>
                     </div>
+
+                    {loadingProfile && (
+                      <p className="mb-4 text-sm text-muted-foreground">Loading profile details...</p>
+                    )}
 
                     <div className="grid gap-6 md:grid-cols-2">
                       <div className="space-y-2">
@@ -345,7 +446,7 @@ export default function Profile() {
                         <Input 
                           value={profile.email}
                           onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                          disabled={!isEditing}
+                          disabled
                         />
                       </div>
                       <div className="space-y-2">
