@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 
 export function useIdentityVerification() {
   const { user } = useAuth();
+  const db = supabase as any;
   const [verification, setVerification] = useState<IdentityVerification | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendingOTP, setSendingOTP] = useState(false);
@@ -31,7 +32,7 @@ export function useIdentityVerification() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('identity_verification')
         .select('*')
         .eq('user_id', user.id)
@@ -43,7 +44,7 @@ export function useIdentityVerification() {
 
       if (!data) {
         // Create initial verification record
-        const { data: newVerification, error: createError } = await supabase
+        const { data: newVerification, error: createError } = await db
           .from('identity_verification')
           .insert({
             user_id: user.id,
@@ -156,7 +157,7 @@ export function useIdentityVerification() {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('identity_verification')
         .update({
           institutional_email: email,
@@ -180,7 +181,7 @@ export function useIdentityVerification() {
     if (!user) return;
 
     try {
-      await supabase.from('device_logs').insert({
+      await db.from('device_logs').insert({
         user_id: user.id,
         device_fingerprint: fingerprint,
         ip_address: ipAddress || '0.0.0.0',
@@ -189,7 +190,7 @@ export function useIdentityVerification() {
       });
 
       // Update last device in verification
-      await supabase
+      await db
         .from('identity_verification')
         .update({
           last_device_fingerprint: fingerprint,

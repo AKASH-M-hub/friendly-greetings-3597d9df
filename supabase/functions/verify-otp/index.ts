@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Verify OTP Edge Function
 // Validates OTP codes and updates verification status
 

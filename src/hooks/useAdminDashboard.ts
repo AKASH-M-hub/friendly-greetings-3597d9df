@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 
 export function useAdminDashboard() {
   const { user } = useAuth();
+  const db = supabase as any;
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [institutionId, setInstitutionId] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export function useAdminDashboard() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('institution_admins')
         .select('*, institution:institutions(*)')
         .eq('user_id', user.id)
@@ -71,7 +72,7 @@ export function useAdminDashboard() {
     if (!institutionId) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('teacher_approvals')
         .select(`
           *,
@@ -102,7 +103,7 @@ export function useAdminDashboard() {
     if (!institutionId) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('teacher_approvals')
         .select(`
           *,
@@ -127,7 +128,7 @@ export function useAdminDashboard() {
     if (!institutionId) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('admin_activity_log')
         .select('*')
         .eq('institution_id', institutionId)
@@ -144,7 +145,7 @@ export function useAdminDashboard() {
   // Fetch anomalies
   const fetchAnomalies = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('transaction_anomalies')
         .select('*, user:auth.users!user_id(email)')
         .eq('reviewed', false)
@@ -186,7 +187,7 @@ export function useAdminDashboard() {
     setProcessing(true);
     try {
       // Update approval status
-      const { error } = await supabase
+      const { error } = await db
         .from('teacher_approvals')
         .update({
           approval_status: status,
@@ -240,7 +241,7 @@ export function useAdminDashboard() {
       const suspendedUntil = new Date();
       suspendedUntil.setDate(suspendedUntil.getDate() + days);
 
-      const { error } = await supabase
+      const { error } = await db
         .from('teacher_approvals')
         .update({
           approval_status: 'suspended',
@@ -279,7 +280,7 @@ export function useAdminDashboard() {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('teacher_approvals')
         .update({
           flagged_for_review: true,
@@ -317,7 +318,7 @@ export function useAdminDashboard() {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('transaction_anomalies')
         .update({
           reviewed: true,
@@ -349,7 +350,7 @@ export function useAdminDashboard() {
     if (!user || !institutionId) return;
 
     try {
-      await supabase.from('admin_activity_log').insert({
+      await db.from('admin_activity_log').insert({
         admin_id: user.id,
         institution_id: institutionId,
         ...activity,

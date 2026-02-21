@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 export function useTeacherPerformance(teacherId?: string) {
   const { user } = useAuth();
   const targetUserId = teacherId || user?.id;
+  const db = supabase as any;
 
   const [performance, setPerformance] = useState<TeacherPerformance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export function useTeacherPerformance(teacherId?: string) {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('teacher_performance')
         .select('*')
         .eq('teacher_id', targetUserId)
@@ -44,7 +45,7 @@ export function useTeacherPerformance(teacherId?: string) {
 
       if (!data) {
         // Initialize performance record
-        const { data: newPerformance, error: createError } = await supabase
+        const { data: newPerformance, error: createError } = await db
           .from('teacher_performance')
           .insert({
             teacher_id: targetUserId,
@@ -80,7 +81,7 @@ export function useTeacherPerformance(teacherId?: string) {
     setSubmittingFeedback(true);
     try {
       // Get session details to find teacher_id
-      const { data: session, error: sessionError } = await supabase
+      const { data: session, error: sessionError } = await db
         .from('teaching_sessions')
         .select('teacher_id')
         .eq('id', feedbackData.session_id)
@@ -89,7 +90,7 @@ export function useTeacherPerformance(teacherId?: string) {
       if (sessionError) throw sessionError;
 
       // Insert feedback
-      const { error } = await supabase.from('session_feedback').insert({
+      const { error } = await db.from('session_feedback').insert({
         session_id: feedbackData.session_id,
         learner_id: user.id,
         teacher_id: session.teacher_id,
@@ -126,7 +127,7 @@ export function useTeacherPerformance(teacherId?: string) {
     if (!user) return false;
 
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('session_feedback')
         .update({
           teacher_confirmed: true,

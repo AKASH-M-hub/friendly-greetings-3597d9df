@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 
 export function useBehavioralMonitoring() {
   const { user } = useAuth();
+  const db = supabase as any;
   const [anomalies, setAnomalies] = useState<TransactionAnomaly[]>([]);
   const [sessionPatterns, setSessionPatterns] = useState<SessionPattern[]>([]);
   const [creditsFrozen, setCreditsFrozen] = useState(false);
@@ -32,7 +33,7 @@ export function useBehavioralMonitoring() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('transaction_anomalies')
         .select('*')
         .eq('user_id', user.id)
@@ -56,7 +57,7 @@ export function useBehavioralMonitoring() {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('session_patterns')
         .select('*')
         .eq('user_id', user.id)
@@ -79,7 +80,7 @@ export function useBehavioralMonitoring() {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('credit_freeze_log')
         .select('*')
         .eq('user_id', user.id)

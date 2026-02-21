@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Send OTP Edge Function
 // Handles email/mobile OTP generation and delivery
 

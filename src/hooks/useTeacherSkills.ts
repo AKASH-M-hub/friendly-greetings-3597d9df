@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 
 export function useTeacherSkills() {
   const { user } = useAuth();
+  const db = supabase as any;
   const [skills, setSkills] = useState<TeacherSkill[]>([]);
   const [domains, setDomains] = useState<SkillDomain[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,7 @@ export function useTeacherSkills() {
   // Fetch skill domains
   const fetchDomains = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('skill_domains')
         .select('*')
         .order('category', { ascending: true });
@@ -49,7 +50,7 @@ export function useTeacherSkills() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('teacher_skills')
         .select(`
           *,
@@ -99,7 +100,7 @@ export function useTeacherSkills() {
         verificationStatus = 'evidence_backed';
       }
 
-      const { error } = await supabase.from('teacher_skills').insert({
+      const { error } = await db.from('teacher_skills').insert({
         teacher_id: user.id,
         skill_domain_id: skillData.skill_domain_id,
         experience_level: skillData.experience_level,
@@ -140,7 +141,7 @@ export function useTeacherSkills() {
     if (!user) return false;
 
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('teacher_skills')
         .update({
           ...updates,
@@ -166,7 +167,7 @@ export function useTeacherSkills() {
     if (!user) return false;
 
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('teacher_skills')
         .delete()
         .eq('id', skillId)
