@@ -440,12 +440,276 @@ export type Database = {
         }
         Relationships: []
       }
+      mcq_questions: {
+        Row: {
+          id: string
+          session_id: string | null
+          topic: string
+          skill_level: string
+          question_text: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          correct_option: string
+          explanation: string | null
+          difficulty_score: number
+          times_answered: number
+          times_correct: number
+          created_at: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          session_id?: string | null
+          topic: string
+          skill_level: string
+          question_text: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          correct_option: string
+          explanation?: string | null
+          difficulty_score?: number
+          times_answered?: number
+          times_correct?: number
+          created_at?: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          session_id?: string | null
+          topic?: string
+          skill_level?: string
+          question_text?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          correct_option?: string
+          explanation?: string | null
+          difficulty_score?: number
+          times_answered?: number
+          times_correct?: number
+          created_at?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      mcq_attempts: {
+        Row: {
+          id: string
+          user_id: string
+          question_id: string
+          selected_option: string
+          is_correct: boolean
+          time_taken_seconds: number | null
+          attempted_at: string
+          credits_earned: number
+          ip_address: string | null
+          session_fingerprint: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          question_id: string
+          selected_option: string
+          is_correct: boolean
+          time_taken_seconds?: number | null
+          attempted_at?: string
+          credits_earned?: number
+          ip_address?: string | null
+          session_fingerprint?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          question_id?: string
+          selected_option?: string
+          is_correct?: boolean
+          time_taken_seconds?: number | null
+          attempted_at?: string
+          credits_earned?: number
+          ip_address?: string | null
+          session_fingerprint?: string | null
+        }
+        Relationships: []
+      }
+      mcq_daily_limits: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          questions_attempted: number
+          questions_correct: number
+          credits_earned_today: number
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date?: string
+          questions_attempted?: number
+          questions_correct?: number
+          credits_earned_today?: number
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          questions_attempted?: number
+          questions_correct?: number
+          credits_earned_today?: number
+        }
+        Relationships: []
+      }
+      knowledge_progression: {
+        Row: {
+          id: string
+          user_id: string
+          topic: string
+          skill_confidence_level: number
+          questions_answered: number
+          questions_correct: number
+          mastery_score: number
+          last_practiced_at: string | null
+          teaching_readiness: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          topic: string
+          skill_confidence_level?: number
+          questions_answered?: number
+          questions_correct?: number
+          mastery_score?: number
+          last_practiced_at?: string | null
+          teaching_readiness?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          topic?: string
+          skill_confidence_level?: number
+          questions_answered?: number
+          questions_correct?: number
+          mastery_score?: number
+          last_practiced_at?: string | null
+          teaching_readiness?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recovery_activities: {
+        Row: {
+          id: string
+          user_id: string
+          activity_type: Database["public"]["Enums"]["recovery_activity_type"]
+          credits_earned: number
+          description: string | null
+          verification_status: string
+          verified_by: string | null
+          verified_at: string | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          activity_type: Database["public"]["Enums"]["recovery_activity_type"]
+          credits_earned: number
+          description?: string | null
+          verification_status?: string
+          verified_by?: string | null
+          verified_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          activity_type?: Database["public"]["Enums"]["recovery_activity_type"]
+          credits_earned?: number
+          description?: string | null
+          verification_status?: string
+          verified_by?: string | null
+          verified_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      institutional_support_fund: {
+        Row: {
+          id: string
+          recipient_user_id: string
+          credits_granted: number
+          reason: string
+          granted_by: string
+          grant_source: string | null
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          recipient_user_id: string
+          credits_granted: number
+          reason: string
+          granted_by: string
+          grant_source?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          recipient_user_id?: string
+          credits_granted?: number
+          reason?: string
+          granted_by?: string
+          grant_source?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_eligible_mcq_questions: {
+        Args: {
+          p_user_id: string
+          p_limit?: number
+        }
+        Returns: {
+          id: string
+          topic: string
+          skill_level: string
+          question_text: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          difficulty_score: number
+        }[]
+      }
+      record_mcq_attempt: {
+        Args: {
+          p_user_id: string
+          p_question_id: string
+          p_selected_option: string
+          p_time_taken_seconds: number
+          p_ip_address?: string | null
+          p_session_fingerprint?: string | null
+        }
+        Returns: Json
+      }
     }
     Enums: {
       domain_tag:
@@ -457,6 +721,11 @@ export type Database = {
         | "music"
         | "business"
         | "other"
+      recovery_activity_type:
+        | "peer_teaching"
+        | "micro_contribution"
+        | "assisted_teaching"
+        | "institutional_support"
       request_status: "pending" | "accepted" | "declined" | "scheduled"
       session_status:
         | "pending"
@@ -602,6 +871,12 @@ export const Constants = {
         "music",
         "business",
         "other",
+      ],
+      recovery_activity_type: [
+        "peer_teaching",
+        "micro_contribution",
+        "assisted_teaching",
+        "institutional_support",
       ],
       request_status: ["pending", "accepted", "declined", "scheduled"],
       session_status: [

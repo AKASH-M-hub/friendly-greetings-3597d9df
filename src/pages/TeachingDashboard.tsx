@@ -49,9 +49,15 @@ interface Seminar {
 }
 
 export default function TeachingDashboard() {
-  const { unlockMode } = useMode();
+  const { setMode, lockMode } = useMode();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  const handleSwitchMode = () => {
+    setMode('learning');
+    lockMode();
+    navigate('/learning');
+  };
 
   const [showExpertiseForm, setShowExpertiseForm] = useState(false);
   const [showSeminarForm, setShowSeminarForm] = useState(false);
@@ -271,7 +277,7 @@ export default function TeachingDashboard() {
           <div className="flex flex-wrap gap-3">
             <Button
               variant="chrono-outline"
-              onClick={() => unlockMode()}
+              onClick={handleSwitchMode}
             >
               Switch Mode
             </Button>

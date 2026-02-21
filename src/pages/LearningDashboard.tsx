@@ -17,6 +17,7 @@ import { useMode } from '@/contexts/ModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { SeminarCard, Seminar } from '@/components/learning/SeminarCard';
 import { ScheduledClasses } from '@/components/learning/ScheduledClasses';
+import { MCQQuiz } from '@/components/credits/MCQQuiz';
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,9 +38,15 @@ const domainTagToCategory: Record<string, string> = {
 const categories = ['All', 'Technology', 'Design', 'Business', 'Languages', 'Music', 'Science', 'Other'];
 
 export default function LearningDashboard() {
-  const { unlockMode } = useMode();
+  const { setMode, lockMode } = useMode();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  const handleSwitchMode = () => {
+    setMode('teaching');
+    lockMode();
+    navigate('/teaching');
+  };
 
 
   const [seminars, setSeminars] = useState<Seminar[]>([]);
@@ -220,7 +227,7 @@ export default function LearningDashboard() {
               Discover seminars from teachers and request to join
             </p>
           </div>
-          <Button variant="chrono-outline" onClick={() => unlockMode()}>
+          <Button variant="chrono-outline" onClick={handleSwitchMode}>
             Switch Mode
           </Button>
         </div>
@@ -264,6 +271,28 @@ export default function LearningDashboard() {
             })}
           </div>
         </div>
+
+        {/* MCQ Quiz Section - Always Available */}
+        <motion.div 
+          className="mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                Earn Credits Through Learning
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Test your knowledge and earn 2 credits for each correct answer
+              </p>
+            </CardHeader>
+            <CardContent>
+              <MCQQuiz />
+            </CardContent>
+          </Card>
+        </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-4">
           {/* Main Content - Seminars */}
