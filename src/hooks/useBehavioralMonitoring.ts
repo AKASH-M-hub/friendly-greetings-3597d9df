@@ -23,6 +23,20 @@ export function useBehavioralMonitoring() {
   const [freezeLog, setFreezeLog] = useState<CreditFreezeLog | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const isSecuritySchemaError = (error: any) => {
+    const code = error?.code;
+    const status = error?.status;
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      code === '42P01' || code === '42501' ||
+      code === 'PGRST200' || code === 'PGRST205' ||
+      status === 404 ||
+      message.includes('relation') ||
+      message.includes('does not exist') ||
+      message.includes('schema cache')
+    );
+  };
+
   // Fetch user's anomalies
   const fetchAnomalies = async () => {
     if (!user) {
@@ -40,10 +54,14 @@ export function useBehavioralMonitoring() {
         .order('detection_timestamp', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (error) {
+        if (isSecuritySchemaError(error)) { setAnomalies([]); return; }
+        throw error;
+      }
       setAnomalies(data || []);
     } catch (error) {
-      console.error('Error fetching anomalies:', error);
+      if (!isSecuritySchemaError(error)) console.error('Error fetching anomalies:', error);
+      setAnomalies([]);
     } finally {
       setLoading(false);
     }
@@ -64,10 +82,14 @@ export function useBehavioralMonitoring() {
         .eq('suspicious_pattern', true)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        if (isSecuritySchemaError(error)) { setSessionPatterns([]); return; }
+        throw error;
+      }
       setSessionPatterns(data || []);
     } catch (error) {
-      console.error('Error fetching patterns:', error);
+      if (!isSecuritySchemaError(error)) console.error('Error fetching patterns:', error);
+      setSessionPatterns([]);
     }
   };
 
@@ -90,6 +112,7 @@ export function useBehavioralMonitoring() {
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        if (isSecuritySchemaError(error)) { setCreditsFrozen(false); setFreezeLog(null); return; }
         throw error;
       }
 
@@ -101,7 +124,8 @@ export function useBehavioralMonitoring() {
         setFreezeLog(null);
       }
     } catch (error) {
-      console.error('Error checking credit freeze:', error);
+      if (!isSecuritySchemaError(error)) console.error('Error checking credit freeze:', error);
+      setCreditsFrozen(false);
     }
   };
 

@@ -38,15 +38,18 @@ export function useTeacherSkills() {
 
   const isSecuritySchemaError = (error: any) => {
     const code = error?.code;
+    const status = error?.status;
     const message = String(error?.message || '').toLowerCase();
     return (
       code === '42P01' ||
       code === '42501' ||
       code === 'PGRST200' ||
       code === 'PGRST205' ||
+      status === 404 ||
       message.includes('relationship') ||
       message.includes('relation') ||
-      message.includes('does not exist')
+      message.includes('does not exist') ||
+      message.includes('schema cache')
     );
   };
 

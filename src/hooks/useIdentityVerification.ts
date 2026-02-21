@@ -24,15 +24,45 @@ export function useIdentityVerification() {
 
   const isSecuritySchemaError = (error: any) => {
     const code = error?.code;
+    const status = error?.status;
     const message = String(error?.message || '').toLowerCase();
     return (
       code === '42P01' ||
       code === '42501' ||
       code === 'PGRST200' ||
       code === 'PGRST205' ||
+      status === 404 ||
       message.includes('relation') ||
-      message.includes('does not exist')
+      message.includes('does not exist') ||
+      message.includes('schema cache')
     );
+  };
+
+  // Build a synthetic verification object from Supabase Auth data
+  // Used as fallback when the security schema tables are not yet created
+  const buildAuthFallback = (): IdentityVerification => {
+    const emailVerified = !!user?.email_confirmed_at;
+    const mobileVerified = !!user?.phone;
+    let level: VerificationLevel = 'unverified';
+    if (emailVerified && mobileVerified) level = 'mobile_verified';
+    else if (emailVerified) level = 'email_verified';
+
+    return {
+      id: `auth-${user?.id ?? 'unknown'}`,
+      user_id: user?.id ?? '',
+      email_verified: emailVerified,
+      email_verified_at: user?.email_confirmed_at ?? undefined,
+      email_otp_attempts: 0,
+      mobile_number: user?.phone ?? undefined,
+      mobile_verified: mobileVerified,
+      mobile_otp_attempts: 0,
+      institutional_verified: false,
+      device_fingerprint: [],
+      account_creation_timestamp: user?.created_at ?? new Date().toISOString(),
+      verification_level: level,
+      created_at: user?.created_at ?? new Date().toISOString(),
+      updated_at: user?.updated_at ?? new Date().toISOString(),
+    };
   };
 
   // Fetch identity verification status
@@ -53,31 +83,35 @@ export function useIdentityVerification() {
 
       if (error && error.code !== 'PGRST116') {
         if (isSecuritySchemaError(error)) {
-          setVerification(null);
+          setVerification(buildAuthFallback());
           return;
         }
         throw error;
       }
 
       if (!data) {
-        // Create initial verification record
+        // Try to create initial record; if schema missing fall back to auth data
         const { data: newVerification, error: createError } = await db
           .from('identity_verification')
           .insert({
             user_id: user.id,
-            verification_level: 'unverified',
+            verification_level: user.email_confirmed_at ? 'email_verified' : 'unverified',
+            email_verified: !!user.email_confirmed_at,
           })
           .select()
           .single();
 
-        if (createError) throw createError;
+        if (createError) {
+          setVerification(buildAuthFallback());
+          return;
+        }
         setVerification(newVerification);
       } else {
         setVerification(data);
       }
     } catch (error) {
       console.error('Error fetching verification:', error);
-      toast.error('Failed to load verification status');
+      setVerification(buildAuthFallback());
     } finally {
       setLoading(false);
     }

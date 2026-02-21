@@ -31,6 +31,19 @@ export function useAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
+  const isSecuritySchemaError = (error: any) => {
+    const code = error?.code;
+    const status = error?.status;
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      code === '42P01' || code === '42501' ||
+      code === 'PGRST200' || code === 'PGRST205' ||
+      status === 404 ||
+      message.includes('relation') || message.includes('does not exist') ||
+      message.includes('schema cache')
+    );
+  };
+
   // Check if user is admin
   const checkAdminStatus = async () => {
     if (!user) {
@@ -49,6 +62,11 @@ export function useAdminDashboard() {
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        if (isSecuritySchemaError(error)) {
+          setIsAdmin(false);
+          setLoading(false);
+          return;
+        }
         throw error;
       }
 
