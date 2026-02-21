@@ -15,7 +15,8 @@ import {
   Sun,
   Moon,
   LogIn,
-  LogOut
+  LogOut,
+  LifeBuoy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme, Theme } from '@/contexts/ThemeContext';
@@ -81,7 +82,12 @@ export function TopNavbar() {
 
   const isDark = theme === 'dark';
   const isLight = theme === 'light';
-  const visibleNavItems = mainNavItems;
+  
+  // Show Recovery nav if user has low credits (0-5)
+  const showRecovery = user && totalCredits <= 5;
+  const visibleNavItems = showRecovery 
+    ? [...mainNavItems, { icon: LifeBuoy, label: 'Recovery', href: '/recovery' }]
+    : mainNavItems;
 
   // Quick toggle between light/dark or cycle through color themes
   const toggleLightDark = () => {

@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import MeetingRoom from "./pages/MeetingRoom";
+import Recovery from "./pages/Recovery";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="/teaching" element={<TeachingDashboard />} />
                 <Route path="/learning" element={<LearningDashboard />} />
                 <Route path="/credits" element={<Credits />} />
+                <Route path="/recovery" element={<Recovery />} />
                 <Route path="/sessions" element={<Sessions />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
