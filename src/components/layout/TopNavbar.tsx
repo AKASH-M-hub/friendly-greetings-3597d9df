@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  GraduationCap, 
-  BookOpen, 
-  Coins, 
-  Clock, 
-  Settings, 
+import {
+  GraduationCap,
+  BookOpen,
+  Coins,
+  Clock,
+  Settings,
   User,
   History,
   Zap,
@@ -18,7 +18,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useTheme, Theme } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useMode } from '@/contexts/ModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 
 interface NavItem {
@@ -48,7 +47,7 @@ const mainNavItems: NavItem[] = [
 export function TopNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [totalCredits, setTotalCredits] = useState(0);
-  const { theme, setTheme, themes } = useTheme();
+  const { theme, toggleTheme, isDark } = useTheme();
   const { currentMode } = useMode();
   const { user, signOut } = useAuth();
   const location = useLocation();
@@ -79,20 +78,7 @@ export function TopNavbar() {
     navigate('/');
   };
 
-  const isDark = theme === 'dark';
-  const isLight = theme === 'light';
   const visibleNavItems = mainNavItems;
-
-  // Quick toggle between light/dark or cycle through color themes
-  const toggleLightDark = () => {
-    if (isLight) {
-      setTheme('dark');
-    } else if (isDark) {
-      setTheme('sunset');
-    } else {
-      setTheme('light');
-    }
-  };
 
   return (
     <>
@@ -114,15 +100,15 @@ export function TopNavbar() {
             {visibleNavItems.map((item) => {
               const isActive = location.pathname === item.href;
               const Icon = item.icon;
-              
+
               return (
                 <Link
                   key={item.href}
                   to={item.href}
                   className={cn(
                     "group flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200",
-                    isActive 
-                      ? "bg-primary/15 text-primary" 
+                    isActive
+                      ? "bg-primary/15 text-primary"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
@@ -163,74 +149,19 @@ export function TopNavbar() {
               </div>
             )}
 
-            {/* Theme Toggle Button - Light/Dark quick switch */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            {/* Theme Toggle Button - Sunset Dark/Light */}
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-9 w-9"
-              onClick={toggleLightDark}
+              onClick={toggleTheme}
             >
               {isDark ? (
                 <Moon className="h-5 w-5 text-muted-foreground" />
-              ) : isLight ? (
-                <Sun className="h-5 w-5 text-muted-foreground" />
               ) : (
-                <div 
-                  className="h-5 w-5 rounded-full border border-border"
-                  style={{ backgroundColor: themes.find(t => t.id === theme)?.color }}
-                />
+                <Sun className="h-5 w-5 text-muted-foreground" />
               )}
             </Button>
-
-            {/* Theme Selector Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="hidden sm:flex gap-2 text-xs">
-                  Theme
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Choose Theme</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                
-                {/* Light/Dark Mode */}
-                <DropdownMenuItem
-                  onClick={() => setTheme('light')}
-                  className="flex items-center gap-3 cursor-pointer"
-                >
-                  <Sun className="h-4 w-4" />
-                  <span className="flex-1">Light Mode</span>
-                  {theme === 'light' && <span className="text-primary">✓</span>}
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem
-                  onClick={() => setTheme('dark')}
-                  className="flex items-center gap-3 cursor-pointer"
-                >
-                  <Moon className="h-4 w-4" />
-                  <span className="flex-1">Dark Mode</span>
-                  {theme === 'dark' && <span className="text-primary">✓</span>}
-                </DropdownMenuItem>
-                
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground">Color Schemes</DropdownMenuLabel>
-                
-                {themes.filter(t => !['light', 'dark'].includes(t.id)).map((t) => (
-                  <DropdownMenuItem
-                    key={t.id}
-                    onClick={() => setTheme(t.id)}
-                    className="flex items-center gap-3 cursor-pointer"
-                  >
-                    <div 
-                      className="h-4 w-4 rounded-full border border-border/50" 
-                      style={{ backgroundColor: t.color }}
-                    />
-                    <span className="flex-1">{t.name}</span>
-                    {theme === t.id && <span className="text-primary">✓</span>}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             {/* Profile & Settings / Auth */}
             <DropdownMenu>
@@ -255,7 +186,7 @@ export function TopNavbar() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={handleSignOut}
                       className="flex items-center gap-2 cursor-pointer text-destructive"
                     >
@@ -303,7 +234,7 @@ export function TopNavbar() {
                 {visibleNavItems.map((item) => {
                   const isActive = location.pathname === item.href;
                   const Icon = item.icon;
-                  
+
                   return (
                     <Link
                       key={item.href}
@@ -311,8 +242,8 @@ export function TopNavbar() {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all",
-                        isActive 
-                          ? "bg-primary/15 text-primary" 
+                        isActive
+                          ? "bg-primary/15 text-primary"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                     >
@@ -321,9 +252,9 @@ export function TopNavbar() {
                     </Link>
                   );
                 })}
-                
+
                 <div className="my-2 border-t border-border" />
-                
+
                 {/* Credits in mobile */}
                 {user && (
                   <div className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-3">
@@ -332,39 +263,27 @@ export function TopNavbar() {
                   </div>
                 )}
 
-                {/* Theme selector in mobile */}
+                {/* Theme toggle in mobile */}
                 <div className="mt-2 flex items-center gap-2 px-4">
                   <span className="text-sm text-muted-foreground mr-2">Theme:</span>
                   <Button
-                    variant={isLight ? 'default' : 'ghost'}
+                    variant={!isDark ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setTheme('light')}
-                    className="h-8"
+                    onClick={() => toggleTheme()}
+                    className="h-8 gap-2"
                   >
                     <Sun className="h-4 w-4" />
+                    Light
                   </Button>
                   <Button
                     variant={isDark ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setTheme('dark')}
-                    className="h-8"
+                    onClick={() => toggleTheme()}
+                    className="h-8 gap-2"
                   >
                     <Moon className="h-4 w-4" />
+                    Dark
                   </Button>
-                  {themes.filter(t => !['light', 'dark'].includes(t.id)).map((t) => (
-                    <Button
-                      key={t.id}
-                      variant={theme === t.id ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setTheme(t.id)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <div 
-                        className="h-4 w-4 rounded-full" 
-                        style={{ backgroundColor: t.color }}
-                      />
-                    </Button>
-                  ))}
                 </div>
 
                 {/* Auth in mobile */}

@@ -138,7 +138,7 @@ function LandingContent() {
               className="group gap-3 bg-primary px-8 py-6 text-lg text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:shadow-xl"
             >
               <GraduationCap className="h-5 w-5" />
-              𝒢𝑒𝓉 𝒮𝓉𝒶𝓇𝓉𝑒𝒹
+              Get Started
               <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Button>
           </motion.div>

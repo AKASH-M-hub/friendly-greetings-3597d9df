@@ -23,7 +23,18 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 
-const categories = ['All', 'Technology', 'Design', 'Business', 'Languages', 'Music', 'Fitness'];
+const domainTagToCategory: Record<string, string> = {
+  cs: 'Technology',
+  math: 'Science',
+  design: 'Design',
+  science: 'Science',
+  language: 'Languages',
+  music: 'Music',
+  business: 'Business',
+  other: 'Other',
+};
+
+const categories = ['All', 'Technology', 'Design', 'Business', 'Languages', 'Music', 'Science', 'Other'];
 
 export default function LearningDashboard() {
   const { unlockMode } = useMode();
@@ -60,7 +71,7 @@ export default function LearningDashboard() {
         return;
       }
 
-      // 2. Fetch teacher profiles manually
+      // 2. Fetch teacher profiles
       const teacherIds = Array.from(new Set(sessions.map((s: any) => s.teacher_id)));
 
       const { data: profiles, error: profileError } = await supabase
@@ -70,11 +81,24 @@ export default function LearningDashboard() {
 
       if (profileError) throw profileError;
 
-      // Create a map of profiles
       const profileMap = new Map();
       profiles?.forEach((p: any) => profileMap.set(p.id, p));
 
-      // 3. Map to Seminar type
+      // 3. Fetch teacher expertise to get domain_tag (category)
+      const { data: expertiseData } = await supabase
+        .from('teacher_expertise')
+        .select('user_id, domain_tag')
+        .in('user_id', teacherIds)
+        .eq('is_active', true);
+
+      const expertiseMap = new Map<string, string>();
+      expertiseData?.forEach((e: any) => {
+        if (!expertiseMap.has(e.user_id)) {
+          expertiseMap.set(e.user_id, domainTagToCategory[e.domain_tag] || 'Other');
+        }
+      });
+
+      // 4. Map to Seminar type with real category
       const mappedSeminars: Seminar[] = sessions.map((session: any) => {
         const teacher = profileMap.get(session.teacher_id);
         return {
@@ -84,7 +108,7 @@ export default function LearningDashboard() {
           teacher_id: session.teacher_id,
           teacher_name: teacher?.display_name || 'Unknown Teacher',
           teacher_avatar: teacher?.avatar_url,
-          category: 'General',
+          category: expertiseMap.get(session.teacher_id) || 'Other',
           skill_level: 'All Levels',
           duration: '1h',
           max_learners: 1,
@@ -214,16 +238,30 @@ export default function LearningDashboard() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </Button>
-            ))}
+            {categories.map((category) => {
+              const isActive = selectedCategory === category;
+              return (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`
+                    inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium
+                    transition-all duration-200 cursor-pointer
+                    ${isActive
+                      ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
+                      : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary border border-border'
+                    }
+                  `}
+                >
+                  {category}
+                  {isActive && category !== 'All' && (
+                    <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-foreground/20 text-[10px] font-bold">
+                      {seminars.filter(s => s.category === category).length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 

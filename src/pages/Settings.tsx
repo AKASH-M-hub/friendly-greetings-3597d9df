@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Settings as SettingsIcon, 
-  Bell, 
-  Shield, 
-  Palette, 
-  Globe, 
+import {
+  Settings as SettingsIcon,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
   Volume2,
   Eye,
   Lock,
@@ -20,11 +20,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { useTheme, Theme } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 
 export default function Settings() {
-  const { theme, setTheme, themes } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -78,39 +78,26 @@ export default function Settings() {
                 <CardContent className="space-y-6">
                   <div>
                     <Label className="mb-4 block">Theme</Label>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                      {themes.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setTheme(t.id)}
-                          className={cn(
-                            "group relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-300",
-                            theme === t.id 
-                              ? "border-primary bg-primary/10" 
-                              : "border-border hover:border-primary/50"
-                          )}
-                        >
-                          <div 
-                            className={cn(
-                              "h-8 w-8 rounded-full transition-all duration-300",
-                              theme === t.id && "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                            )}
-                            style={{ 
-                              backgroundColor: t.color,
-                              boxShadow: theme === t.id ? `0 0 20px ${t.color}` : 'none'
-                            }}
-                          />
-                          <span className={cn(
-                            "text-xs font-medium",
-                            theme === t.id ? "text-primary" : "text-muted-foreground"
-                          )}>
-                            {t.name.split(' ')[0]}
-                          </span>
-                          {theme === t.id && (
-                            <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary" />
-                          )}
-                        </button>
-                      ))}
+                    <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                      <div className="flex items-center gap-3">
+                        {isDark ? (
+                          <Moon className="h-5 w-5 text-primary" />
+                        ) : (
+                          <Sun className="h-5 w-5 text-primary" />
+                        )}
+                        <div>
+                          <p className="text-sm font-medium">
+                            {isDark ? 'Sunset Dark' : 'Sunset Light'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {isDark ? 'Warm dark theme with orange accents' : 'Clean light theme with orange accents'}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={!isDark}
+                        onCheckedChange={() => toggleTheme()}
+                      />
                     </div>
                   </div>
 
@@ -155,7 +142,7 @@ export default function Settings() {
                         Receive updates via email
                       </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={notifications.email}
                       onCheckedChange={(checked) => setNotifications({ ...notifications, email: checked })}
                     />
@@ -170,7 +157,7 @@ export default function Settings() {
                         Receive browser push notifications
                       </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={notifications.push}
                       onCheckedChange={(checked) => setNotifications({ ...notifications, push: checked })}
                     />
@@ -185,7 +172,7 @@ export default function Settings() {
                         Get reminded before sessions start
                       </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={notifications.sessionReminders}
                       onCheckedChange={(checked) => setNotifications({ ...notifications, sessionReminders: checked })}
                     />
@@ -200,7 +187,7 @@ export default function Settings() {
                         Receive tips and product updates
                       </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={notifications.marketing}
                       onCheckedChange={(checked) => setNotifications({ ...notifications, marketing: checked })}
                     />
@@ -238,7 +225,7 @@ export default function Settings() {
                         </p>
                       </div>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={privacy.profileVisible}
                       onCheckedChange={(checked) => setPrivacy({ ...privacy, profileVisible: checked })}
                     />
@@ -256,7 +243,7 @@ export default function Settings() {
                         </p>
                       </div>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={privacy.showOnlineStatus}
                       onCheckedChange={(checked) => setPrivacy({ ...privacy, showOnlineStatus: checked })}
                     />
