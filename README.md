@@ -4,11 +4,11 @@ Chrono is a time-banking platform where users can teach skills to earn credits a
 
 ## Features
 
-- **Time Banking System**: 
+- **Time Banking System**:
   - Teach to earn 1 credit per minute.
   - Learn to spend 1 credit per minute.
   - Real-time credit transfer during sessions.
-- **Live Video Sessions**: 
+- **Live Video Sessions**:
   - Integrated Google Meet support.
   - Timer-based session tracking.
   - Secure room management.
@@ -33,12 +33,33 @@ Chrono is a time-banking platform where users can teach skills to earn credits a
 
 ## Getting Started
 
-To get started with the project, please refer to the [Setup Instructions](./SETUP_INSTRUCTIONS.md).
+To get started with the project, please refer to the [Setup Instructions](./docs/SETUP_INSTRUCTIONS.md).
 
 ## Project Structure
 
-- `/src/components`: Reusable UI components.
-- `/src/pages`: Main application pages (Dashboard, Meeting Room, etc.).
-- `/src/hooks`: Custom React hooks (Data fetching, Session logic).
-- `/src/sql`: Database schema and migration scripts.
-- `/supabase`: Edge functions (if applicable).
+```
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── pages/          # Main application pages
+│   ├── hooks/          # Custom React hooks
+│   ├── contexts/       # React context providers
+│   ├── integrations/   # Third-party integrations (Supabase)
+│   ├── types/          # TypeScript type definitions
+│   └── lib/            # Utility functions
+├── supabase/
+│   ├── functions/      # Edge functions
+│   ├── migrations/     # Database migrations
+│   └── sql/            # Database scripts & schemas
+├── docs/               # Project documentation
+└── public/             # Static assets
+```
+
+## Documentation
+
+All project documentation is in the [`docs/`](./docs/) folder:
+
+- [Setup Instructions](./docs/SETUP_INSTRUCTIONS.md)
+- [Dependencies](./docs/DEPENDENCIES.md)
+- [Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md)
+- [Quick Deploy Guide](./docs/QUICK_DEPLOY_GUIDE.md)
+- [Security Reference](./docs/SECURITY_QUICK_REFERENCE.md)
