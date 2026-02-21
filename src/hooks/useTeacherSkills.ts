@@ -4,6 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Module-level cache: skip queries once tables are known missing this session
+const _schemaUnavailable = new Set<string>();
 import { useAuth } from '@/contexts/AuthContext';
 import {
   TeacherSkill,
@@ -112,6 +115,10 @@ export function useTeacherSkills() {
 
   // Fetch skill domains
   const fetchDomains = async () => {
+    if (_schemaUnavailable.has('skill_domains')) {
+      setDomains(fallbackDomains);
+      return;
+    }
     try {
       const { data, error } = await db
         .from('skill_domains')
@@ -120,6 +127,7 @@ export function useTeacherSkills() {
 
       if (error) {
         if (isSecuritySchemaError(error)) {
+          _schemaUnavailable.add('skill_domains');
           setDomains(fallbackDomains);
           return;
         }
@@ -127,7 +135,7 @@ export function useTeacherSkills() {
       }
       setDomains(data || []);
     } catch (error) {
-      console.error('Error fetching domains:', error);
+      if (!isSecuritySchemaError(error)) console.error('Error fetching domains:', error);
       setDomains(fallbackDomains);
     }
   };
@@ -136,6 +144,12 @@ export function useTeacherSkills() {
   const fetchTeacherSkills = async () => {
     if (!user) {
       setSkills([]);
+      setLoading(false);
+      return;
+    }
+
+    if (_schemaUnavailable.has('teacher_skills')) {
+      await fetchLegacySkills();
       setLoading(false);
       return;
     }
@@ -150,6 +164,7 @@ export function useTeacherSkills() {
 
       if (error) {
         if (isSecuritySchemaError(error)) {
+          _schemaUnavailable.add('teacher_skills');
           await fetchLegacySkills();
           return;
         }
