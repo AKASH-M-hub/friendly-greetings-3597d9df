@@ -4,6 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Module-level cache: skip queries once tables are known missing this session
+const _schemaUnavailable = new Set<string>();
 import { useAuth } from '@/contexts/AuthContext';
 import {
   TransactionAnomaly,
@@ -45,6 +48,12 @@ export function useBehavioralMonitoring() {
       return;
     }
 
+    if (_schemaUnavailable.has('transaction_anomalies')) {
+      setAnomalies([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await db
@@ -55,7 +64,11 @@ export function useBehavioralMonitoring() {
         .limit(20);
 
       if (error) {
-        if (isSecuritySchemaError(error)) { setAnomalies([]); return; }
+        if (isSecuritySchemaError(error)) {
+          _schemaUnavailable.add('transaction_anomalies');
+          setAnomalies([]);
+          return;
+        }
         throw error;
       }
       setAnomalies(data || []);
@@ -74,6 +87,11 @@ export function useBehavioralMonitoring() {
       return;
     }
 
+    if (_schemaUnavailable.has('session_patterns')) {
+      setSessionPatterns([]);
+      return;
+    }
+
     try {
       const { data, error } = await db
         .from('session_patterns')
@@ -83,7 +101,11 @@ export function useBehavioralMonitoring() {
         .order('updated_at', { ascending: false });
 
       if (error) {
-        if (isSecuritySchemaError(error)) { setSessionPatterns([]); return; }
+        if (isSecuritySchemaError(error)) {
+          _schemaUnavailable.add('session_patterns');
+          setSessionPatterns([]);
+          return;
+        }
         throw error;
       }
       setSessionPatterns(data || []);
@@ -101,6 +123,12 @@ export function useBehavioralMonitoring() {
       return;
     }
 
+    if (_schemaUnavailable.has('credit_freeze_log')) {
+      setCreditsFrozen(false);
+      setFreezeLog(null);
+      return;
+    }
+
     try {
       const { data, error } = await db
         .from('credit_freeze_log')
@@ -112,7 +140,12 @@ export function useBehavioralMonitoring() {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        if (isSecuritySchemaError(error)) { setCreditsFrozen(false); setFreezeLog(null); return; }
+        if (isSecuritySchemaError(error)) {
+          _schemaUnavailable.add('credit_freeze_log');
+          setCreditsFrozen(false);
+          setFreezeLog(null);
+          return;
+        }
         throw error;
       }
 

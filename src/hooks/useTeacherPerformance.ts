@@ -4,6 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Module-level cache: skip queries once tables are known missing this session
+const _schemaUnavailable = new Set<string>();
 import { useAuth } from '@/contexts/AuthContext';
 import {
   TeacherPerformance,
@@ -116,6 +119,12 @@ export function useTeacherPerformance(teacherId?: string) {
       return;
     }
 
+    if (_schemaUnavailable.has('teacher_performance')) {
+      await fetchLegacyPerformance();
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await db
@@ -126,6 +135,7 @@ export function useTeacherPerformance(teacherId?: string) {
 
       if (error && error.code !== 'PGRST116') {
         if (isSecuritySchemaError(error)) {
+          _schemaUnavailable.add('teacher_performance');
           await fetchLegacyPerformance();
           return;
         }
@@ -145,6 +155,7 @@ export function useTeacherPerformance(teacherId?: string) {
 
         if (createError) {
           if (isSecuritySchemaError(createError)) {
+            _schemaUnavailable.add('teacher_performance');
             await fetchLegacyPerformance();
             return;
           }

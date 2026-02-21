@@ -4,6 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Module-level cache: skip queries once tables are known missing this session
+const _schemaUnavailable = new Set<string>();
 import { useAuth } from '@/contexts/AuthContext';
 import {
   InstitutionAdmin,
@@ -54,6 +57,12 @@ export function useAdminDashboard() {
 
     try {
       setLoading(true);
+      if (_schemaUnavailable.has('institution_admins')) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await db
         .from('institution_admins')
         .select('*, institution:institutions(*)')
@@ -63,6 +72,7 @@ export function useAdminDashboard() {
 
       if (error && error.code !== 'PGRST116') {
         if (isSecuritySchemaError(error)) {
+          _schemaUnavailable.add('institution_admins');
           setIsAdmin(false);
           setLoading(false);
           return;

@@ -4,6 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Module-level cache: once a table 404s, skip all future queries this session
+const _schemaUnavailable = new Set<string>();
 import { useAuth } from '@/contexts/AuthContext';
 import {
   IdentityVerification,
@@ -73,6 +76,13 @@ export function useIdentityVerification() {
       return;
     }
 
+    // Skip if we already know this table is missing
+    if (_schemaUnavailable.has('identity_verification')) {
+      setVerification(buildAuthFallback());
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await db
@@ -83,6 +93,7 @@ export function useIdentityVerification() {
 
       if (error && error.code !== 'PGRST116') {
         if (isSecuritySchemaError(error)) {
+          _schemaUnavailable.add('identity_verification');
           setVerification(buildAuthFallback());
           return;
         }
@@ -132,14 +143,25 @@ export function useIdentityVerification() {
     try {
       // Call Supabase Edge Function for OTP generation
       const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: {
-          userId: user.id,
-          type,
-          contact,
-        },
+        body: { userId: user.id, type, contact },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Edge function not deployed or CORS issue — degrade gracefully
+        const msg = String(error?.message || '');
+        if (
+          msg.includes('Failed to send a request') ||
+          msg.includes('FunctionsFetchError') ||
+          msg.includes('Failed to fetch') ||
+          (error as any)?.status === 404
+        ) {
+          toast.info('OTP service is being set up', {
+            description: 'Verification will be available soon. Contact support if urgent.',
+          });
+          return false;
+        }
+        throw error;
+      }
 
       toast.success(`OTP sent to your ${type}`, {
         description: 'Please check and enter the code',
@@ -147,6 +169,17 @@ export function useIdentityVerification() {
 
       return true;
     } catch (error: any) {
+      const msg = String(error?.message || '');
+      if (
+        msg.includes('Failed to send a request') ||
+        msg.includes('FunctionsFetchError') ||
+        msg.includes('Failed to fetch')
+      ) {
+        toast.info('OTP service is being set up', {
+          description: 'Verification will be available soon. Contact support if urgent.',
+        });
+        return false;
+      }
       console.error('Error sending OTP:', error);
       toast.error(error.message || 'Failed to send OTP');
       return false;
@@ -166,14 +199,24 @@ export function useIdentityVerification() {
     try {
       // Call Supabase Edge Function for OTP verification
       const { data, error } = await supabase.functions.invoke('verify-otp', {
-        body: {
-          userId: user.id,
-          code: otpCode,
-          type,
-        } as VerifyOTPRequest,
+        body: { userId: user.id, code: otpCode, type } as VerifyOTPRequest,
       });
 
-      if (error) throw error;
+      if (error) {
+        const msg = String(error?.message || '');
+        if (
+          msg.includes('Failed to send a request') ||
+          msg.includes('FunctionsFetchError') ||
+          msg.includes('Failed to fetch') ||
+          (error as any)?.status === 404
+        ) {
+          toast.info('Verification service is being set up', {
+            description: 'Please try again later or contact support.',
+          });
+          return false;
+        }
+        throw error;
+      }
 
       const response = data as VerifyOTPResponse;
 
