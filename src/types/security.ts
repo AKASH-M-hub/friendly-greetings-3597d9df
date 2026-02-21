@@ -586,9 +586,9 @@ export type SkillCategory = typeof SKILL_CATEGORIES[number];
 // =====================================================
 
 export interface VerifyOTPRequest {
-  user_id: string;
-  otp_code: string;
-  otp_type: OTPType;
+  userId: string;
+  code: string;
+  type: OTPType;
 }
 
 export interface VerifyOTPResponse {

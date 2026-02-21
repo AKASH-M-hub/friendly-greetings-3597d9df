@@ -22,6 +22,19 @@ export function useIdentityVerification() {
   const [sendingOTP, setSendingOTP] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
+  const isSecuritySchemaError = (error: any) => {
+    const code = error?.code;
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      code === '42P01' ||
+      code === '42501' ||
+      code === 'PGRST200' ||
+      code === 'PGRST205' ||
+      message.includes('relation') ||
+      message.includes('does not exist')
+    );
+  };
+
   // Fetch identity verification status
   const fetchVerification = async () => {
     if (!user) {
@@ -39,6 +52,10 @@ export function useIdentityVerification() {
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        if (isSecuritySchemaError(error)) {
+          setVerification(null);
+          return;
+        }
         throw error;
       }
 
@@ -82,9 +99,9 @@ export function useIdentityVerification() {
       // Call Supabase Edge Function for OTP generation
       const { data, error } = await supabase.functions.invoke('send-otp', {
         body: {
-          user_id: user.id,
-          otp_type: type,
-          contact: contact, // email or phone number
+          userId: user.id,
+          type,
+          contact,
         },
       });
 
@@ -116,9 +133,9 @@ export function useIdentityVerification() {
       // Call Supabase Edge Function for OTP verification
       const { data, error } = await supabase.functions.invoke('verify-otp', {
         body: {
-          user_id: user.id,
-          otp_code: otpCode,
-          otp_type: type,
+          userId: user.id,
+          code: otpCode,
+          type,
         } as VerifyOTPRequest,
       });
 

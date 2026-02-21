@@ -14,6 +14,9 @@ interface VerifyOTPRequest {
   type: 'email' | 'mobile' | 'institutional';
   code: string;
   userId: string;
+  otp_type?: 'email' | 'mobile' | 'institutional';
+  otp_code?: string;
+  user_id?: string;
 }
 
 const MAX_ATTEMPTS = 5;
@@ -25,7 +28,10 @@ serve(async (req) => {
   }
 
   try {
-    const { type, code, userId }: VerifyOTPRequest = await req.json();
+    const payload: VerifyOTPRequest = await req.json();
+    const type = payload.type || payload.otp_type;
+    const code = payload.code || payload.otp_code;
+    const userId = payload.userId || payload.user_id;
 
     // Validate input
     if (!type || !code || !userId) {

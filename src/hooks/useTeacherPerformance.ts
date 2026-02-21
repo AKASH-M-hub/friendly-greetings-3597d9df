@@ -23,6 +23,19 @@ export function useTeacherPerformance(teacherId?: string) {
   const [loading, setLoading] = useState(true);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
+  const isSecuritySchemaError = (error: any) => {
+    const code = error?.code;
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      code === '42P01' ||
+      code === '42501' ||
+      code === 'PGRST200' ||
+      code === 'PGRST205' ||
+      message.includes('relation') ||
+      message.includes('does not exist')
+    );
+  };
+
   // Fetch teacher performance metrics
   const fetchPerformance = async () => {
     if (!targetUserId) {
@@ -40,6 +53,10 @@ export function useTeacherPerformance(teacherId?: string) {
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        if (isSecuritySchemaError(error)) {
+          setPerformance(null);
+          return;
+        }
         throw error;
       }
 
@@ -54,7 +71,13 @@ export function useTeacherPerformance(teacherId?: string) {
           .select()
           .single();
 
-        if (createError) throw createError;
+        if (createError) {
+          if (isSecuritySchemaError(createError)) {
+            setPerformance(null);
+            return;
+          }
+          throw createError;
+        }
         setPerformance(newPerformance);
       } else {
         setPerformance(data);

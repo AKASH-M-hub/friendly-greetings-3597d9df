@@ -14,6 +14,8 @@ interface OTPRequest {
   type: 'email' | 'mobile' | 'institutional';
   contact: string;
   userId: string;
+  otp_type?: 'email' | 'mobile' | 'institutional';
+  user_id?: string;
 }
 
 serve(async (req) => {
@@ -23,7 +25,10 @@ serve(async (req) => {
   }
 
   try {
-    const { type, contact, userId }: OTPRequest = await req.json();
+    const payload: OTPRequest = await req.json();
+    const type = payload.type || payload.otp_type;
+    const contact = payload.contact;
+    const userId = payload.userId || payload.user_id;
 
     // Validate input
     if (!type || !contact || !userId) {
@@ -37,14 +42,15 @@ serve(async (req) => {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = otp;
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Store OTP in database
     const { error: insertError } = await supabase.from('otp_codes').insert({
       user_id: userId,
       otp_type: type,
-      contact_info: contact,
       otp_code: otp,
+      otp_hash: otpHash,
       expires_at: expiresAt.toISOString(),
     });
 

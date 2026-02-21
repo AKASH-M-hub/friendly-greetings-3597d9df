@@ -24,6 +24,19 @@ export function useTeacherSkills() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const isSecuritySchemaError = (error: any) => {
+    const code = error?.code;
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      code === '42P01' ||
+      code === '42501' ||
+      code === 'PGRST200' ||
+      code === 'PGRST205' ||
+      message.includes('relation') ||
+      message.includes('does not exist')
+    );
+  };
+
   // Fetch skill domains
   const fetchDomains = async () => {
     try {
@@ -32,7 +45,13 @@ export function useTeacherSkills() {
         .select('*')
         .order('category', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        if (isSecuritySchemaError(error)) {
+          setDomains([]);
+          return;
+        }
+        throw error;
+      }
       setDomains(data || []);
     } catch (error) {
       console.error('Error fetching domains:', error);
@@ -59,7 +78,13 @@ export function useTeacherSkills() {
         .eq('teacher_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        if (isSecuritySchemaError(error)) {
+          setSkills([]);
+          return;
+        }
+        throw error;
+      }
       setSkills(data || []);
     } catch (error) {
       console.error('Error fetching teacher skills:', error);
