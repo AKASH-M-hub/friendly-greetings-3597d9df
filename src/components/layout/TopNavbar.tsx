@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Home, 
   GraduationCap, 
   BookOpen, 
   Coins, 
@@ -40,7 +39,6 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { icon: Home, label: 'Home', href: '/' },
   { icon: GraduationCap, label: 'Teaching', href: '/teaching' },
   { icon: BookOpen, label: 'Learning', href: '/learning' },
   { icon: Coins, label: 'Credits', href: '/credits' },
@@ -83,6 +81,7 @@ export function TopNavbar() {
 
   const isDark = theme === 'dark';
   const isLight = theme === 'light';
+  const visibleNavItems = mainNavItems;
 
   // Quick toggle between light/dark or cycle through color themes
   const toggleLightDark = () => {
@@ -112,7 +111,7 @@ export function TopNavbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-1 md:flex">
-            {mainNavItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = location.pathname === item.href;
               const Icon = item.icon;
               
@@ -301,7 +300,7 @@ export function TopNavbar() {
               className="border-t border-border bg-background/95 backdrop-blur-xl md:hidden"
             >
               <nav className="flex flex-col gap-1 p-4">
-                {mainNavItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const isActive = location.pathname === item.href;
                   const Icon = item.icon;
                   

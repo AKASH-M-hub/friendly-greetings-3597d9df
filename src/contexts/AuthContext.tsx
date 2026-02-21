@@ -22,6 +22,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const configuredAuthRedirectUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : undefined;
+  const isLocalhost = typeof window !== 'undefined'
+    ? ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
+    : false;
+  const authRedirectTo = isLocalhost
+    ? `${currentOrigin}/mode`
+    : configuredAuthRedirectUrl || (currentOrigin ? `${currentOrigin}/mode` : undefined);
 
   const isRedirectConfigurationError = (message?: string) => {
     if (!message) return false;
@@ -63,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
-        ...(configuredAuthRedirectUrl ? { emailRedirectTo: configuredAuthRedirectUrl } : {}),
+        ...(authRedirectTo ? { emailRedirectTo: authRedirectTo } : {}),
         data: {
           display_name: displayName,
         },
@@ -98,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/mode`,
+        ...(authRedirectTo ? { redirectTo: authRedirectTo } : {}),
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -113,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       type: 'signup',
       email,
       options: {
-        ...(configuredAuthRedirectUrl ? { emailRedirectTo: configuredAuthRedirectUrl } : {}),
+        ...(authRedirectTo ? { emailRedirectTo: authRedirectTo } : {}),
       },
     });
 
