@@ -5,7 +5,8 @@ import {
   Sparkles,
   GraduationCap,
   Search,
-  Filter,
+  ShieldCheck,
+  AlertTriangle,
 
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -13,11 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { useMode } from '@/contexts/ModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { SeminarCard, Seminar } from '@/components/learning/SeminarCard';
 import { ScheduledClasses } from '@/components/learning/ScheduledClasses';
 import { MCQQuiz } from '@/components/credits/MCQQuiz';
+import { useIdentityVerification } from '@/hooks/useIdentityVerification';
+import { useBehavioralMonitoring } from '@/hooks/useBehavioralMonitoring';
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -43,6 +47,22 @@ export default function LearningDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [emailOtpCode, setEmailOtpCode] = useState('');
+
+  const {
+    verification,
+    sendingOTP,
+    verifying,
+    sendOTP,
+    verifyOTP,
+    getVerificationProgress,
+  } = useIdentityVerification();
+
+  const {
+    creditsFrozen,
+    getBehavioralHealthScore,
+    canEarnCredits,
+  } = useBehavioralMonitoring();
 
 
   useEffect(() => {
@@ -190,6 +210,10 @@ export default function LearningDashboard() {
     return matchesSearch && matchesCategory;
   });
 
+  const verificationProgress = getVerificationProgress();
+  const behavioralHealthScore = getBehavioralHealthScore();
+  const creditEligibility = canEarnCredits();
+
   return (
     <MainLayout>
       <div className="min-h-screen p-6 lg:p-8">
@@ -307,6 +331,83 @@ export default function LearningDashboard() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  Security Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Verification</span>
+                    <span className="font-medium">{verificationProgress}%</span>
+                  </div>
+                  <Progress value={verificationProgress} />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant={verification?.email_verified ? 'default' : 'outline'}>
+                    Email
+                  </Badge>
+                  <Badge variant={verification?.mobile_verified ? 'default' : 'outline'}>
+                    Mobile
+                  </Badge>
+                  <Badge variant={verification?.institutional_verified ? 'default' : 'outline'}>
+                    Institutional
+                  </Badge>
+                </div>
+
+                {!verification?.email_verified && user?.email && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter email OTP"
+                        value={emailOtpCode}
+                        onChange={(e) => setEmailOtpCode(e.target.value)}
+                        maxLength={6}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => sendOTP('email', user.email || '')}
+                        disabled={sendingOTP}
+                      >
+                        Send
+                      </Button>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => verifyOTP(emailOtpCode, 'email')}
+                      disabled={verifying || emailOtpCode.length < 6}
+                    >
+                      Verify Email OTP
+                    </Button>
+                  </div>
+                )}
+
+                <div className="rounded-lg border border-border p-3">
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Behavioral Health</span>
+                    <span className="font-medium">{behavioralHealthScore}/100</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {creditEligibility.allowed
+                      ? 'Credits are active and earning is allowed.'
+                      : creditEligibility.reason}
+                  </p>
+                  {creditsFrozen && (
+                    <div className="mt-2 inline-flex items-center gap-1 text-xs text-destructive">
+                      <AlertTriangle className="h-3 w-3" />
+                      Credits currently frozen
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
 
             {/* Session Memory Section */}

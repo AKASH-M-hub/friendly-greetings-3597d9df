@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb, BookOpen, Trash2, Video } from 'lucide-react';
+import { Plus, Edit2, Calendar, MessageSquare, Star, Lightbulb, BookOpen, Trash2, Video, ShieldCheck, UserCheck } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,9 @@ import { CreateSeminarForm } from '@/components/teaching/CreateSeminarForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTeacherSkills } from '@/hooks/useTeacherSkills';
+import { useTeacherPerformance } from '@/hooks/useTeacherPerformance';
+import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 
 type DomainTag = 'cs' | 'math' | 'design' | 'science' | 'language' | 'music' | 'business' | 'other';
 
@@ -67,6 +70,10 @@ export default function TeachingDashboard() {
   const [recentFeedback, setRecentFeedback] = useState<RecentFeedback[]>([]);
   const [pendingReviewSessionId, setPendingReviewSessionId] = useState<string | null>(null);
   const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+
+  const { getApprovedSkills, getPendingSkills } = useTeacherSkills();
+  const { performance, getPerformanceBreakdown, meetsMinimumStandards } = useTeacherPerformance();
+  const { isAdmin, getDashboardStats } = useAdminDashboard();
 
   const getDismissedReviewSessionIds = (userId: string): Set<string> => {
     const storageKey = `chrono:dismissed-review-prompts:${userId}`;
@@ -261,6 +268,11 @@ export default function TeachingDashboard() {
     );
   }
 
+  const approvedSkills = getApprovedSkills();
+  const pendingSkills = getPendingSkills();
+  const performanceBreakdown = getPerformanceBreakdown();
+  const adminStats = getDashboardStats();
+
   return (
     <MainLayout>
       <div className="min-h-screen p-6 lg:p-8">
@@ -400,6 +412,66 @@ export default function TeachingDashboard() {
             </Card>
           </motion.div>
         )}
+
+        {/* Stats Grid */}
+        <div className="mb-8 grid gap-6 lg:grid-cols-2">
+          <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                Trust & Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Reliability Score</span>
+                <span className="font-medium">{performance?.reliability_score ?? 0}/100</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Average Rating</span>
+                <span className="font-medium">{performance?.average_rating?.toFixed(1) ?? '0.0'}/5</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Completion</span>
+                <span className="font-medium">{performanceBreakdown?.completion ?? 0}%</span>
+              </div>
+              <Badge variant={meetsMinimumStandards() ? 'default' : 'outline'}>
+                {meetsMinimumStandards() ? 'Eligible for Visibility Boost' : 'Below Minimum Standards'}
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UserCheck className="h-4 w-4 text-primary" />
+                Skill & Approval Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Approved Skills</span>
+                <span className="font-medium">{approvedSkills.length}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Pending Review</span>
+                <span className="font-medium">{pendingSkills.length}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Teachers can create seminars once relevant skills are approved.
+              </p>
+
+              {isAdmin && (
+                <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium text-foreground">Admin Snapshot</p>
+                  <p>Pending approvals: {adminStats.pending_approvals}</p>
+                  <p>Flagged users: {adminStats.flagged_users}</p>
+                  <p>Unresolved anomalies: {adminStats.unresolved_anomalies}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Stats Grid */}
         <div className="mb-8">
