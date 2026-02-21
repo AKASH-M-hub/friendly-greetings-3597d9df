@@ -195,9 +195,15 @@ export function CreateSeminarForm({ onComplete, onCancel }: CreateSeminarFormPro
                 <Input
                   type="number"
                   min={1}
-                  max={50}
+                  max={100}
                   value={formData.max_learners}
-                  onChange={(e) => setFormData({ ...formData, max_learners: parseInt(e.target.value) || 1 })}
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
+                    const nextValue = Number.isNaN(parsed)
+                      ? 1
+                      : Math.min(100, Math.max(1, parsed));
+                    setFormData({ ...formData, max_learners: nextValue });
+                  }}
                 />
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -22,11 +22,38 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMode } from '@/contexts/ModeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface Skill {
+  name: string;
+  level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+}
+
+const DEFAULT_SKILLS: Skill[] = [
+  { name: 'Web Development', level: 'Expert' },
+  { name: 'UI/UX Design', level: 'Advanced' },
+  { name: 'React', level: 'Expert' },
+  { name: 'Product Management', level: 'Intermediate' },
+];
+
+const SKILLS_METADATA_PREFIX = 'SKILLS_JSON::';
+
+const isSkillLevel = (value: string): value is Skill['level'] => {
+  return ['Beginner', 'Intermediate', 'Advanced', 'Expert'].includes(value);
+};
 
 export default function Profile() {
   const { modeHistory } = useMode();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingSkills, setIsEditingSkills] = useState(false);
+  const [loadingSkills, setLoadingSkills] = useState(false);
+  const [savingSkills, setSavingSkills] = useState(false);
+  const [skillsMetadataId, setSkillsMetadataId] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     name: 'Alex Johnson',
     email: 'alex.johnson@email.com',
@@ -36,18 +63,141 @@ export default function Profile() {
     joinDate: 'January 2024',
   });
 
-  const skills = [
-    { name: 'Web Development', level: 'Expert' },
-    { name: 'UI/UX Design', level: 'Advanced' },
-    { name: 'React', level: 'Expert' },
-    { name: 'Product Management', level: 'Intermediate' },
-  ];
+  const [skills, setSkills] = useState<Skill[]>(DEFAULT_SKILLS);
+  const [newSkillName, setNewSkillName] = useState('');
+  const [newSkillLevel, setNewSkillLevel] = useState<Skill['level']>('Beginner');
 
   const achievements = [
     { icon: Star, title: 'Top Rated', description: 'Maintained 4.9+ rating' },
     { icon: Award, title: 'Power Teacher', description: '50+ teaching sessions' },
     { icon: Zap, title: 'Quick Learner', description: 'Completed 20 sessions' },
   ];
+
+  const handleSkillChange = (index: number, updates: Partial<Skill>) => {
+    setSkills((prev) =>
+      prev.map((skill, i) => (i === index ? { ...skill, ...updates } : skill))
+    );
+  };
+
+  const handleRemoveSkill = (index: number) => {
+    setSkills((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddSkill = () => {
+    const trimmed = newSkillName.trim();
+    if (!trimmed) return;
+
+    setSkills((prev) => [...prev, { name: trimmed, level: newSkillLevel }]);
+    setNewSkillName('');
+    setNewSkillLevel('Beginner');
+  };
+
+  const loadSkillsFromSupabase = async () => {
+    if (!user) return;
+
+    setLoadingSkills(true);
+    try {
+      const { data, error } = await supabase
+        .from('teacher_expertise')
+        .select('id, expertise_text')
+        .eq('user_id', user.id)
+        .eq('is_active', false)
+        .like('expertise_text', `${SKILLS_METADATA_PREFIX}%`)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        setSkillsMetadataId(null);
+        setSkills(DEFAULT_SKILLS);
+        return;
+      }
+
+      setSkillsMetadataId(data.id);
+
+      const serialized = data.expertise_text.startsWith(SKILLS_METADATA_PREFIX)
+        ? data.expertise_text.slice(SKILLS_METADATA_PREFIX.length)
+        : '[]';
+
+      const parsed = JSON.parse(serialized);
+      if (!Array.isArray(parsed)) {
+        setSkills(DEFAULT_SKILLS);
+        return;
+      }
+
+      const normalized = parsed
+        .map((item: any) => ({
+          name: typeof item?.name === 'string' ? item.name.trim() : '',
+          level: typeof item?.level === 'string' && isSkillLevel(item.level) ? item.level : 'Beginner',
+        }))
+        .filter((item: Skill) => item.name.length > 0);
+
+      setSkills(normalized);
+    } catch (error) {
+      console.error('Failed to load skills:', error);
+      toast.error('Failed to load skills');
+      setSkills(DEFAULT_SKILLS);
+    } finally {
+      setLoadingSkills(false);
+    }
+  };
+
+  const saveSkillsToSupabase = async (): Promise<boolean> => {
+    if (!user) return false;
+
+    const cleanedSkills = skills
+      .map((skill) => ({ name: skill.name.trim(), level: skill.level }))
+      .filter((skill) => skill.name.length > 0);
+
+    setSavingSkills(true);
+    try {
+      const expertiseText = `${SKILLS_METADATA_PREFIX}${JSON.stringify(cleanedSkills)}`;
+      const updatedAt = new Date().toISOString();
+
+      if (skillsMetadataId) {
+        const { error } = await supabase
+          .from('teacher_expertise')
+          .update({ expertise_text: expertiseText, updated_at: updatedAt })
+          .eq('id', skillsMetadataId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('teacher_expertise')
+          .insert({
+            user_id: user.id,
+            expertise_text: expertiseText,
+            domain_tag: 'other',
+            is_active: false,
+            updated_at: updatedAt,
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        setSkillsMetadataId(data.id);
+      }
+
+      setSkills(cleanedSkills);
+      toast.success('Skills updated');
+      return true;
+    } catch (error) {
+      console.error('Failed to save skills:', error);
+      toast.error('Failed to save skills');
+      return false;
+    } finally {
+      setSavingSkills(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadSkillsFromSupabase();
+    }
+  }, [user]);
 
   return (
     <MainLayout>
@@ -237,21 +387,96 @@ export default function Profile() {
                       <h3 className="font-display text-lg font-semibold text-foreground">
                         Your Skills
                       </h3>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        Add Skill
+                      <Button
+                        variant={isEditingSkills ? 'default' : 'outline'}
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          if (isEditingSkills) {
+                            const saved = await saveSkillsToSupabase();
+                            if (saved) {
+                              setIsEditingSkills(false);
+                            }
+                            return;
+                          }
+
+                          setIsEditingSkills(true);
+                        }}
+                        disabled={loadingSkills || savingSkills}
+                      >
+                        {savingSkills ? 'Saving...' : isEditingSkills ? 'Save Skills' : 'Edit Skills'}
                       </Button>
                     </div>
 
+                    {loadingSkills && (
+                      <p className="mb-4 text-sm text-muted-foreground">Loading saved skills...</p>
+                    )}
+
+                    {isEditingSkills && (
+                      <div className="mb-4 grid gap-3 rounded-lg border border-border bg-muted/20 p-4 sm:grid-cols-[1fr_180px_auto]">
+                        <Input
+                          placeholder="New skill"
+                          value={newSkillName}
+                          onChange={(e) => setNewSkillName(e.target.value)}
+                        />
+                        <Select
+                          value={newSkillLevel}
+                          onValueChange={(value) => setNewSkillLevel(value as Skill['level'])}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Beginner">Beginner</SelectItem>
+                            <SelectItem value="Intermediate">Intermediate</SelectItem>
+                            <SelectItem value="Advanced">Advanced</SelectItem>
+                            <SelectItem value="Expert">Expert</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button type="button" onClick={handleAddSkill} disabled={!newSkillName.trim()}>
+                          Add
+                        </Button>
+                      </div>
+                    )}
+
                     <div className="grid gap-4 sm:grid-cols-2">
-                      {skills.map((skill) => (
+                      {skills.map((skill, index) => (
                         <div 
-                          key={skill.name}
+                          key={`${skill.name}-${index}`}
                           className="rounded-lg border border-border bg-muted/30 p-4"
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-foreground">{skill.name}</span>
-                            <Badge variant="secondary">{skill.level}</Badge>
-                          </div>
+                          {isEditingSkills ? (
+                            <div className="space-y-3">
+                              <Input
+                                value={skill.name}
+                                onChange={(e) => handleSkillChange(index, { name: e.target.value })}
+                              />
+                              <div className="flex items-center gap-2">
+                                <Select
+                                  value={skill.level}
+                                  onValueChange={(value) => handleSkillChange(index, { level: value as Skill['level'] })}
+                                >
+                                  <SelectTrigger className="flex-1">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Beginner">Beginner</SelectItem>
+                                    <SelectItem value="Intermediate">Intermediate</SelectItem>
+                                    <SelectItem value="Advanced">Advanced</SelectItem>
+                                    <SelectItem value="Expert">Expert</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Button type="button" variant="outline" onClick={() => handleRemoveSkill(index)}>
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-foreground">{skill.name}</span>
+                              <Badge variant="secondary">{skill.level}</Badge>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
