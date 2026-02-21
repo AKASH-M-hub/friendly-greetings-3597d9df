@@ -16,9 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AmbientBackground } from '@/components/effects/AmbientBackground';
 import { ThemeDropdown } from '@/components/ui/ThemeDropdown';
-import { ReviewSection } from '@/components/reviews/ReviewSection';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
 import { useLandingStats } from '@/hooks/useLandingStats';
 
 const features = [
@@ -253,9 +251,6 @@ function LandingContent() {
           </motion.div>
         </div>
       </section>
-
-      {/* Review Section */}
-      <ReviewSection />
 
       {/* CTA Section */}
       <section className="relative py-24">
