@@ -31,9 +31,78 @@ export function useTeacherPerformance(teacherId?: string) {
       code === '42501' ||
       code === 'PGRST200' ||
       code === 'PGRST205' ||
+      message.includes('relationship') ||
       message.includes('relation') ||
       message.includes('does not exist')
     );
+  };
+
+  const fetchLegacyPerformance = async () => {
+    if (!targetUserId) {
+      setPerformance(null);
+      return;
+    }
+
+    try {
+      const [{ data: reviewRows }, { data: sessionRows }] = await Promise.all([
+        db
+          .from('teaching_reviews')
+          .select('experience_rating')
+          .eq('teacher_id', targetUserId),
+        db
+          .from('teaching_sessions')
+          .select('status')
+          .eq('teacher_id', targetUserId),
+      ]);
+
+      const ratings: number[] = (reviewRows || [])
+        .map((row: any) => Number(row.experience_rating || 0))
+        .filter((value: number) => value > 0);
+
+      const totalRatings = ratings.length;
+      const averageRating = totalRatings
+        ? ratings.reduce((sum, value) => sum + value, 0) / totalRatings
+        : 0;
+
+      const totalSessions = (sessionRows || []).length;
+      const completedSessions = (sessionRows || []).filter((row: any) => row.status === 'completed').length;
+      const cancelledSessions = (sessionRows || []).filter((row: any) => row.status === 'cancelled').length;
+      const noShowSessions = (sessionRows || []).filter((row: any) => row.status === 'no_show').length;
+      const completionRate = totalSessions ? (completedSessions / totalSessions) * 100 : 0;
+
+      const legacyPerformance: TeacherPerformance = {
+        id: `legacy-${targetUserId}`,
+        teacher_id: targetUserId,
+        total_sessions: totalSessions,
+        completed_sessions: completedSessions,
+        cancelled_sessions: cancelledSessions,
+        no_show_sessions: noShowSessions,
+        completion_rate: Number(completionRate.toFixed(2)),
+        total_ratings: totalRatings,
+        average_rating: Number(averageRating.toFixed(2)),
+        five_star_count: ratings.filter((value) => value === 5).length,
+        four_star_count: ratings.filter((value) => value === 4).length,
+        three_star_count: ratings.filter((value) => value === 3).length,
+        two_star_count: ratings.filter((value) => value === 2).length,
+        one_star_count: ratings.filter((value) => value === 1).length,
+        unique_learners: 0,
+        repeat_learners: 0,
+        repeat_learner_ratio: 0,
+        total_complaints: 0,
+        resolved_complaints: 0,
+        complaint_rate: 0,
+        reliability_score: Math.max(20, Math.min(100, Math.round((completionRate * 0.5) + ((averageRating / 5) * 50)))),
+        visibility_level: 'normal',
+        auto_demotion_count: 0,
+        last_calculated_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      setPerformance(legacyPerformance);
+    } catch {
+      setPerformance(null);
+    }
   };
 
   // Fetch teacher performance metrics
@@ -54,7 +123,7 @@ export function useTeacherPerformance(teacherId?: string) {
 
       if (error && error.code !== 'PGRST116') {
         if (isSecuritySchemaError(error)) {
-          setPerformance(null);
+          await fetchLegacyPerformance();
           return;
         }
         throw error;
@@ -73,7 +142,7 @@ export function useTeacherPerformance(teacherId?: string) {
 
         if (createError) {
           if (isSecuritySchemaError(createError)) {
-            setPerformance(null);
+            await fetchLegacyPerformance();
             return;
           }
           throw createError;
@@ -84,7 +153,7 @@ export function useTeacherPerformance(teacherId?: string) {
       }
     } catch (error) {
       console.error('Error fetching performance:', error);
-      toast.error('Failed to load performance metrics');
+      await fetchLegacyPerformance();
     } finally {
       setLoading(false);
     }

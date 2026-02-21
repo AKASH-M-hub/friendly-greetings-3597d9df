@@ -24,6 +24,18 @@ export function useTeacherSkills() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const fallbackDomains: SkillDomain[] = [
+    {
+      id: 'legacy-general',
+      name: 'General',
+      category: 'Other',
+      requires_validation: false,
+      is_high_risk: false,
+      description: 'Legacy fallback domain',
+      created_at: new Date().toISOString(),
+    },
+  ];
+
   const isSecuritySchemaError = (error: any) => {
     const code = error?.code;
     const message = String(error?.message || '').toLowerCase();
@@ -32,9 +44,67 @@ export function useTeacherSkills() {
       code === '42501' ||
       code === 'PGRST200' ||
       code === 'PGRST205' ||
+      message.includes('relationship') ||
       message.includes('relation') ||
       message.includes('does not exist')
     );
+  };
+
+  const fetchLegacySkills = async () => {
+    if (!user) {
+      setSkills([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await db
+        .from('teacher_expertise')
+        .select('id, expertise_text, domain_tag, created_at')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (error || !data?.length) {
+        setSkills([]);
+        return;
+      }
+
+      const row = data[0];
+      const mapped: TeacherSkill = {
+        id: row.id,
+        teacher_id: user.id,
+        skill_domain_id: 'legacy-general',
+        experience_level: 'intermediate',
+        teaching_scope: 'all_levels',
+        years_of_experience: undefined,
+        description: row.expertise_text,
+        portfolio_url: undefined,
+        github_url: undefined,
+        certification_url: undefined,
+        resume_url: undefined,
+        verification_status: 'self_declared',
+        verified_by: undefined,
+        verified_at: undefined,
+        approval_status: 'approved',
+        rejection_reason: undefined,
+        created_at: row.created_at,
+        updated_at: row.created_at,
+        skill_domain: {
+          id: 'legacy-general',
+          name: row.domain_tag || 'General',
+          category: 'Other',
+          requires_validation: false,
+          is_high_risk: false,
+          description: 'Legacy expertise mapping',
+          created_at: row.created_at,
+        },
+      };
+
+      setDomains((prev) => (prev.length ? prev : fallbackDomains));
+      setSkills([mapped]);
+    } catch {
+      setSkills([]);
+    }
   };
 
   // Fetch skill domains
@@ -47,7 +117,7 @@ export function useTeacherSkills() {
 
       if (error) {
         if (isSecuritySchemaError(error)) {
-          setDomains([]);
+          setDomains(fallbackDomains);
           return;
         }
         throw error;
@@ -55,7 +125,7 @@ export function useTeacherSkills() {
       setDomains(data || []);
     } catch (error) {
       console.error('Error fetching domains:', error);
-      toast.error('Failed to load skill domains');
+      setDomains(fallbackDomains);
     }
   };
 
@@ -71,24 +141,43 @@ export function useTeacherSkills() {
       setLoading(true);
       const { data, error } = await db
         .from('teacher_skills')
-        .select(`
-          *,
-          skill_domain:skill_domains(*)
-        `)
+        .select('*')
         .eq('teacher_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
         if (isSecuritySchemaError(error)) {
-          setSkills([]);
+          await fetchLegacySkills();
           return;
         }
         throw error;
       }
-      setSkills(data || []);
+
+      const rows: TeacherSkill[] = (data || []) as TeacherSkill[];
+      const domainIds = Array.from(new Set(rows.map((skill) => skill.skill_domain_id).filter(Boolean)));
+
+      if (!domainIds.length) {
+        setSkills(rows);
+        return;
+      }
+
+      const { data: domainRows } = await db
+        .from('skill_domains')
+        .select('*')
+        .in('id', domainIds);
+
+      const domainMap = new Map<string, SkillDomain>();
+      (domainRows || []).forEach((domain: SkillDomain) => domainMap.set(domain.id, domain));
+
+      setSkills(
+        rows.map((skill) => ({
+          ...skill,
+          skill_domain: domainMap.get(skill.skill_domain_id),
+        }))
+      );
     } catch (error) {
       console.error('Error fetching teacher skills:', error);
-      toast.error('Failed to load your skills');
+      await fetchLegacySkills();
     } finally {
       setLoading(false);
     }
