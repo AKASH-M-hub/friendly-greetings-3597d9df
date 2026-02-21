@@ -16,6 +16,7 @@ import { CreateSeminarForm } from '@/components/teaching/CreateSeminarForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { SecurityLayersPanel } from '@/components/teaching/SecurityLayersPanel';
 
 type DomainTag = 'cs' | 'math' | 'design' | 'science' | 'language' | 'music' | 'business' | 'other';
 
@@ -67,6 +68,8 @@ export default function TeachingDashboard() {
   const [recentFeedback, setRecentFeedback] = useState<RecentFeedback[]>([]);
   const [pendingReviewSessionId, setPendingReviewSessionId] = useState<string | null>(null);
   const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+
+  // Security hooks are handled inside SecurityLayersPanel — no duplicates here
 
   const getDismissedReviewSessionIds = (userId: string): Set<string> => {
     const storageKey = `chrono:dismissed-review-prompts:${userId}`;
@@ -308,6 +311,16 @@ export default function TeachingDashboard() {
             </Button>
           </div>
         </div>
+
+        {/* ── Security Layers (interactive) ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <SecurityLayersPanel />
+        </motion.div>
 
         {/* My Seminars */}
         <motion.div
