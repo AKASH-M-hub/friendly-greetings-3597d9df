@@ -62,6 +62,26 @@ export default function TeachingDashboard() {
   const [pendingReviewSessionId, setPendingReviewSessionId] = useState<string | null>(null);
   const [showReviewPrompt, setShowReviewPrompt] = useState(false);
 
+  const getDismissedReviewSessionIds = (userId: string): Set<string> => {
+    const storageKey = `chrono:dismissed-review-prompts:${userId}`;
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return new Set();
+
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? new Set(parsed) : new Set();
+    } catch {
+      return new Set();
+    }
+  };
+
+  const markReviewPromptDismissed = (userId: string, sessionId: string) => {
+    const storageKey = `chrono:dismissed-review-prompts:${userId}`;
+    const dismissed = getDismissedReviewSessionIds(userId);
+    dismissed.add(sessionId);
+    localStorage.setItem(storageKey, JSON.stringify(Array.from(dismissed)));
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -169,9 +189,10 @@ export default function TeachingDashboard() {
     // Find completed sessions without reviews
     const { data: sessions } = await supabase
       .from('teaching_sessions')
-      .select('id')
+      .select('id, created_at')
       .eq('teacher_id', user.id)
-      .eq('status', 'completed');
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false });
 
     if (!sessions?.length) return;
 
@@ -181,7 +202,10 @@ export default function TeachingDashboard() {
       .eq('teacher_id', user.id);
 
     const reviewedSessionIds = new Set(reviews?.map(r => r.session_id) || []);
-    const pendingSession = sessions.find(s => !reviewedSessionIds.has(s.id));
+    const dismissedSessionIds = getDismissedReviewSessionIds(user.id);
+    const pendingSession = sessions.find(
+      s => !reviewedSessionIds.has(s.id) && !dismissedSessionIds.has(s.id)
+    );
 
     if (pendingSession) {
       setPendingReviewSessionId(pendingSession.id);
@@ -499,7 +523,13 @@ export default function TeachingDashboard() {
           <TeachingReviewPrompt
             sessionId={pendingReviewSessionId}
             open={showReviewPrompt}
-            onOpenChange={setShowReviewPrompt}
+            onOpenChange={(open) => {
+              setShowReviewPrompt(open);
+              if (!open && user && pendingReviewSessionId) {
+                markReviewPromptDismissed(user.id, pendingReviewSessionId);
+                setPendingReviewSessionId(null);
+              }
+            }}
             onComplete={() => {
               setShowReviewPrompt(false);
               setPendingReviewSessionId(null);
